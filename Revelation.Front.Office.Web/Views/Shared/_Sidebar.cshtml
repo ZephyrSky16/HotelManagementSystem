@@ -1,0 +1,49 @@
+@{
+    string currentController = ViewContext.RouteData.Values["controller"] as string ?? "";
+    string currentAction = ViewContext.RouteData.Values["action"] as string ?? "";
+
+    Func<string, string, bool> isActive = (ctrl, action) =>
+        string.Equals(currentController, ctrl, StringComparison.OrdinalIgnoreCase) &&
+        (string.IsNullOrEmpty(action) || string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase));
+
+    Func<string, string, string, string> navClass = (ctrl, action, extra) =>
+        "nav-link" + (isActive(ctrl, action) ? " active" : "") + (string.IsNullOrEmpty(extra) ? "" : " " + extra);
+}
+<div class="sidebar-brand">
+    <div class="brand-mark"><i class="fa fa-building"></i></div>
+    <div class="brand-text"><strong>Harborview Grand</strong><small>Hotel &amp; Suites PMS</small></div>
+</div>
+<nav class="sidebar-nav">
+    <div class="sidebar-section-title"><span>Front Office</span></div>
+    <a class="@navClass("Dashboard", "Index", null)" href="@Url.Action("Index", "Dashboard")"><i class="fa fa-tachometer"></i><span>Dashboard</span></a>
+    <a class="@navClass("Calendar", "Index", null)" href="@Url.Action("Index", "Calendar")"><i class="fa fa-calendar"></i><span>Room Availability Calendar</span></a>
+    <a class="@navClass("Reservations", null, null)" href="@Url.Action("Index", "Reservations")"><i class="fa fa-bookmark"></i><span>Reservations / Bookings</span></a>
+    <a class="@navClass("CheckIn", null, null)" href="@Url.Action("Index", "CheckIn")"><i class="fa fa-sign-in"></i><span>Check-in</span></a>
+    <a class="@navClass("CheckOut", null, null)" href="@Url.Action("Index", "CheckOut")"><i class="fa fa-sign-out"></i><span>Check-out</span></a>
+    <a class="@navClass("Reservations", "InHouse", null)" href="@Url.Action("InHouse", "Reservations")"><i class="fa fa-users"></i><span>In-House Guests</span></a>
+    <a class="@navClass("Rooms", "Status", null)" href="@Url.Action("Status", "Rooms")"><i class="fa fa-door-closed"></i><span>Room Status</span></a>
+
+    <div class="sidebar-section-title"><span>Hotel Management</span></div>
+    <a class="@navClass("Rooms", "Index", null)" href="@Url.Action("Index", "Rooms")"><i class="fa fa-building-o"></i><span>Room Management</span></a>
+    <a class="@navClass("RoomTypes", null, null)" href="@Url.Action("Index", "RoomTypes")"><i class="fa fa-th-large"></i><span>Room Types</span></a>
+    <a class="@navClass("Rates", null, null)" href="@Url.Action("Index", "Rates")"><i class="fa fa-tags"></i><span>Rate Management</span></a>
+    <a class="@navClass("Maintenance", null, null)" href="@Url.Action("Index", "Maintenance")"><i class="fa fa-wrench"></i><span>Maintenance</span></a>
+    <a class="@navClass("Housekeeping", null, null)" href="@Url.Action("Index", "Housekeeping")"><i class="fa fa-paint-brush"></i><span>Housekeeping</span></a>
+    <a class="@navClass("Guests", null, null)" href="@Url.Action("Index", "Guests")"><i class="fa fa-address-card"></i><span>Guest Management</span></a>
+
+    <div class="sidebar-section-title"><span>HotellingSystem</span></div>
+    <a class="@navClass("ReservationRecords", null, null)" href="@Url.Action("Index", "ReservationRecords")"><i class="fa fa-database"></i><span>Reservations</span></a>
+
+    <div class="sidebar-section-title"><span>HotellingSystem Setup</span></div>
+    @{ var currentKey = ViewContext.RouteData.Values["key"] as string; }
+    @foreach (var def in Revelation.Front.Office.Web.HotellingSystem.MasterDataRegistry.All)
+    {
+        var active = isActive("MasterData", "Index") && string.Equals(currentKey, def.Key, StringComparison.OrdinalIgnoreCase);
+        <a class="nav-link@(active ? " active" : "")" href="@Url.RouteUrl("MasterData", new { key = def.Key })"><i class="fa @def.Icon"></i><span>@def.Title</span></a>
+    }
+
+    <div class="sidebar-section-title"><span>Reports</span></div>
+    <a class="@navClass("Reports", "Occupancy", null)" href="@Url.Action("Occupancy", "Reports")"><i class="fa fa-pie-chart"></i><span>Occupancy Report</span></a>
+    <a class="@navClass("Reports", "Booking", null)" href="@Url.Action("Booking", "Reports")"><i class="fa fa-clipboard"></i><span>Booking Report</span></a>
+    <a class="@navClass("Reports", "Revenue", null)" href="@Url.Action("Revenue", "Reports")"><i class="fa fa-line-chart"></i><span>Revenue Report</span></a>
+</nav>

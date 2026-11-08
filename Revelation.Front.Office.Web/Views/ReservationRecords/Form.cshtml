@@ -1,0 +1,97 @@
+@model Revelation.Front.Office.Web.ViewModels.ReservationRecordFormViewModel
+@{
+    var isEdit = Model.Id.HasValue;
+    ViewBag.Title = isEdit ? "Edit Reservation #" + Model.Id : "New Reservation";
+    var label = new { @class = "form-label" };
+    var error = new { @class = "text-danger text-xs" };
+}
+
+<div class="page-header">
+    <div>
+        <h1>@ViewBag.Title</h1>
+        <div class="text-muted">HotellingSystem &middot; dbo.Reservation. Dropdowns list active setup values; manage them under <em>HotellingSystem Setup</em> in the sidebar.</div>
+    </div>
+    <a href="@Url.Action("Index")" class="btn btn-hms-outline btn-sm"><i class="fa fa-arrow-left me-1"></i>Back to List</a>
+</div>
+
+<div class="hms-card">
+    <div class="hms-card-body">
+        @using (Html.BeginForm(isEdit ? "Edit" : "Create", "ReservationRecords", isEdit ? new { id = Model.Id } : null, FormMethod.Post, new { id = "reservationRecordForm" }))
+        {
+            @Html.AntiForgeryToken()
+            @Html.ValidationSummary(false, "Please correct the errors below.", new { @class = "alert alert-danger" })
+
+            <div class="form-section-title"><span class="step-badge">1</span>Booking</div>
+            <div class="row g-3">
+                <div class="col-md-3">@Html.LabelFor(m => m.ReservationStatusId, label) @Html.DropDownListFor(m => m.ReservationStatusId, Model.ReservationStatuses, "-- None --", new { @class = "form-select" })</div>
+                <div class="col-md-3">@Html.LabelFor(m => m.BookingCodeId, label) @Html.DropDownListFor(m => m.BookingCodeId, Model.BookingCodes, "-- None --", new { @class = "form-select" })</div>
+                <div class="col-md-3">@Html.LabelFor(m => m.MarketCodeId, label) @Html.DropDownListFor(m => m.MarketCodeId, Model.MarketCodes, "-- None --", new { @class = "form-select" })</div>
+                <div class="col-md-3">@Html.LabelFor(m => m.RateId, label) @Html.DropDownListFor(m => m.RateId, Model.Rates, "-- None --", new { @class = "form-select" })</div>
+                <div class="col-md-4">@Html.LabelFor(m => m.OTABookingReference, label) @Html.TextBoxFor(m => m.OTABookingReference, new { @class = "form-control", maxlength = 200 }) @Html.ValidationMessageFor(m => m.OTABookingReference, "", error)</div>
+                <div class="col-md-4">@Html.LabelFor(m => m.BookingReleaseCutOffDate, label) @Html.TextBoxFor(m => m.BookingReleaseCutOffDate, "{0:yyyy-MM-dd}", new { @class = "form-control", type = "date" })</div>
+                <div class="col-md-4">@Html.LabelFor(m => m.GroupCoordinator, label) @Html.TextBoxFor(m => m.GroupCoordinator, new { @class = "form-control" })</div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title"><span class="step-badge">2</span>Agent &amp; Sales</div>
+            <div class="row g-3">
+                <div class="col-md-4">@Html.LabelFor(m => m.AgentId, label) @Html.DropDownListFor(m => m.AgentId, Model.Agents, "-- None --", new { @class = "form-select", id = "agentSelect" })</div>
+                <div class="col-md-4">@Html.LabelFor(m => m.AgentName, label) @Html.TextBoxFor(m => m.AgentName, new { @class = "form-control", maxlength = 200, id = "agentNameInput" }) @Html.ValidationMessageFor(m => m.AgentName, "", error)</div>
+                <div class="col-md-4 d-flex align-items-end"><div class="form-check mb-2">@Html.CheckBoxFor(m => m.IsCommission, new { @class = "form-check-input" }) @Html.LabelFor(m => m.IsCommission, new { @class = "form-check-label" })</div></div>
+                <div class="col-md-4">@Html.LabelFor(m => m.SalesId, label) @Html.DropDownListFor(m => m.SalesId, Model.Sales, "-- None --", new { @class = "form-select" })</div>
+                <div class="col-md-4">@Html.LabelFor(m => m.AccountExecutiveId, label) @Html.TextBoxFor(m => m.AccountExecutiveId, new { @class = "form-control", type = "number", min = 1 }) @Html.ValidationMessageFor(m => m.AccountExecutiveId, "", error)</div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title"><span class="step-badge">3</span>Confirmation</div>
+            <div class="row g-3">
+                <div class="col-md-4">@Html.LabelFor(m => m.ConfirmToId, label) @Html.DropDownListFor(m => m.ConfirmToId, Model.ConfirmTos, "-- None --", new { @class = "form-select" })</div>
+                <div class="col-md-4">@Html.LabelFor(m => m.ConfirmViaId, label) @Html.DropDownListFor(m => m.ConfirmViaId, Model.ConfirmVias, "-- None --", new { @class = "form-select" })</div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title"><span class="step-badge">4</span>Deposit &amp; Settlement</div>
+            <div class="row g-3">
+                <div class="col-md-3">@Html.LabelFor(m => m.RequiredDepositAmount, label) @Html.TextBoxFor(m => m.RequiredDepositAmount, new { @class = "form-control", type = "number", min = 0, step = 1 }) @Html.ValidationMessageFor(m => m.RequiredDepositAmount, "", error)</div>
+                <div class="col-md-3">@Html.LabelFor(m => m.CardExpiry, label) @Html.TextBoxFor(m => m.CardExpiry, new { @class = "form-control", maxlength = 50, placeholder = "MM/YY" }) @Html.ValidationMessageFor(m => m.CardExpiry, "", error)</div>
+                <div class="col-md-3">@Html.LabelFor(m => m.SettleByGuestId, label) @Html.TextBoxFor(m => m.SettleByGuestId, new { @class = "form-control", type = "number", min = 1 }) @Html.ValidationMessageFor(m => m.SettleByGuestId, "", error)</div>
+                <div class="col-md-3 d-flex align-items-end"><div class="form-check mb-2">@Html.CheckBoxFor(m => m.IsSendBillAllCharges, new { @class = "form-check-input" }) @Html.LabelFor(m => m.IsSendBillAllCharges, new { @class = "form-check-label" })</div></div>
+                <div class="col-12">@Html.LabelFor(m => m.SettlementReference, label) @Html.TextAreaFor(m => m.SettlementReference, 2, 0, new { @class = "form-control" })</div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title"><span class="step-badge">5</span>Remarks &amp; Cancellation</div>
+            <div class="row g-3">
+                <div class="col-md-6">@Html.LabelFor(m => m.CheckInRemarks, label) @Html.TextAreaFor(m => m.CheckInRemarks, 3, 0, new { @class = "form-control" })</div>
+                <div class="col-md-6">@Html.LabelFor(m => m.CheckOutRemarks, label) @Html.TextAreaFor(m => m.CheckOutRemarks, 3, 0, new { @class = "form-control" })</div>
+                <div class="col-md-4">@Html.LabelFor(m => m.LastCancellationId, label) @Html.DropDownListFor(m => m.LastCancellationId, Model.Cancellations, "-- None --", new { @class = "form-select" })</div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <a href="@Url.Action("Index")" class="btn btn-hms-outline">Cancel</a>
+                <button type="submit" class="btn btn-hms-primary"><i class="fa fa-save me-1"></i>@(isEdit ? "Save Changes" : "Create Reservation")</button>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            // Agent Name is stored separately on the reservation; fill it from the
+            // selected agent unless the user has typed something else.
+            var $name = $("#agentNameInput"), $agent = $("#agentSelect");
+            function agentText() { return $agent.val() ? $agent.find("option:selected").text().replace(/ \(inactive\)$/, "") : ""; }
+            var lastAuto = agentText();
+            $agent.on("change", function () {
+                var text = agentText();
+                if (!$name.val() || $name.val() === lastAuto) { $name.val(text); }
+                lastAuto = text;
+            });
+        });
+    </script>
+}

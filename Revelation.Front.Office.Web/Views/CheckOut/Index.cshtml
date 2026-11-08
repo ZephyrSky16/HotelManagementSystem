@@ -1,0 +1,98 @@
+@model Revelation.Front.Office.Web.ViewModels.CheckOutIndexViewModel
+@{
+    ViewBag.Title = "Check-out";
+}
+
+<div class="page-header">
+    <div><h1>Check-out</h1><div class="text-muted">Search for an in-house guest to settle the bill and complete departure.</div></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-lg-4">
+        <div class="hms-card mb-3">
+            <div class="hms-card-body"><label class="form-label">Search In-House Guest</label><input type="search" class="form-control" id="coSearchInput" placeholder="Guest name, room, or reservation #..."></div>
+        </div>
+        <div class="hms-card">
+            <div class="hms-card-header"><h2>In-House Guests</h2></div>
+            <div class="hms-card-body p-0" id="coGuestList" style="max-height:60vh;overflow:auto;">
+                @foreach (var r in Model.InHouseGuests)
+                {
+                    <a href="#" class="d-block text-decoration-none text-dark border-bottom px-3 py-2 guest-item" data-id="@r.Id">
+                        <div class="d-flex justify-content-between"><span class="fw-600">@r.Guest.FullName</span><span class="status-pill status-slate">Room @r.Room.Number</span></div>
+                        <div class="text-xs text-muted">@r.ReservationNo &middot; Room @r.Room.Number</div>
+                        <div class="text-xs text-muted">Check-out: @r.CheckOut.ToString("MMM d, yyyy")</div>
+                    </a>
+                }
+                @if (!Model.InHouseGuests.Any())
+                {
+                    <div class="text-center text-muted py-4 small">No in-house guests found.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-8">
+        <div id="coEmptyState" class="hms-card">
+            <div class="hms-card-body text-center text-muted py-5"><i class="fa fa-file-text-o fa-3x d-block mb-2"></i>Select a guest from the list to review charges and process check-out.</div>
+        </div>
+
+        <div id="coPanel" style="display:none;">
+            <div class="hms-card mb-3">
+                <div class="hms-card-header"><h2 id="coGuestName">--</h2><span id="coResBadge"></span></div>
+                <div class="hms-card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4"><div class="text-muted text-xs">Room</div><div class="fw-600" id="coRoom">--</div></div>
+                        <div class="col-md-4"><div class="text-muted text-xs">Stay Dates</div><div class="fw-600" id="coDates">--</div></div>
+                        <div class="col-md-4"><div class="text-muted text-xs">Nights</div><div class="fw-600" id="coNights">--</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hms-card mb-3">
+                <div class="hms-card-header"><h2>Folio / Charges</h2></div>
+                <div class="hms-card-body p-0">
+                    <table class="table hms-table mb-0"><thead><tr><th>Description</th><th class="text-end">Amount</th></tr></thead><tbody id="coChargesBody"></tbody></table>
+                </div>
+                <div class="hms-card-body border-top pt-3">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-5"><label class="form-label">Add Charge -- Description</label><input type="text" class="form-control form-control-sm" id="coChargeDesc" placeholder="e.g. Minibar, Room Service"></div>
+                        <div class="col-md-3"><label class="form-label">Amount</label><input type="number" min="0" step="0.01" class="form-control form-control-sm" id="coChargeAmt"></div>
+                        <div class="col-md-4"><button class="btn btn-hms-outline btn-sm w-100" id="coAddChargeBtn" type="button"><i class="fa fa-plus me-1"></i>Add Additional Charge</button></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hms-card mb-3">
+                <div class="hms-card-header"><h2>Payment Summary</h2></div>
+                <div class="hms-card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3"><div class="text-muted text-xs">Total Due</div><div class="fs-5 fw-600" id="coTotal">--</div></div>
+                        <div class="col-md-3"><div class="text-muted text-xs">Amount Paid</div><div class="fs-5 fw-600 text-success" id="coPaid">--</div></div>
+                        <div class="col-md-3"><div class="text-muted text-xs">Outstanding Balance</div><div class="fs-5 fw-600 text-danger" id="coBalance">--</div></div>
+                        <div class="col-md-3">
+                            <label class="form-label">Record Payment</label>
+                            <div class="input-group"><span class="input-group-text">$</span><input type="number" class="form-control" id="coPaymentAmount" min="0" step="0.01"><button class="btn btn-hms-outline" id="coRecordPaymentBtn" type="button">Apply</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-hms-outline" id="coCancelBtn">Clear Selection</button>
+                <button class="btn btn-hms-primary btn-lg" id="coConfirmBtn"><i class="fa fa-sign-out me-1"></i>Confirm Check-out</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.CheckOutUrls = {
+            getFolio: '@Url.Action("GetFolio")',
+            addCharge: '@Url.Action("AddCharge")',
+            recordPayment: '@Url.Action("RecordPayment")',
+            confirm: '@Url.Action("Confirm")'
+        };
+    </script>
+    <script src="~/Scripts/checkout.js"></script>
+}

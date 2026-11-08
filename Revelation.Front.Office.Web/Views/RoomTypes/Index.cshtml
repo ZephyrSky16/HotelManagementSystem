@@ -1,0 +1,109 @@
+@model List<Revelation.Front.Office.Models.Entities.RoomType>
+@{
+    ViewBag.Title = "Room Types";
+    var counts = ViewBag.RoomCounts as Dictionary<int, int>;
+}
+
+<div class="page-header">
+    <div><h1>Room Types</h1><div class="text-muted">Configure the room categories offered by the hotel.</div></div>
+    <button class="btn btn-hms-primary btn-sm" id="addTypeBtn"><i class="fa fa-plus me-1"></i>Add Room Type</button>
+</div>
+
+<div class="row g-3">
+    @foreach (var t in Model)
+    {
+        var count = counts != null && counts.ContainsKey(t.Id) ? counts[t.Id] : 0;
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="hms-card h-100">
+                <div class="hms-card-header"><h2>@t.Name</h2>@Html.Raw(t.Active ? "<span class='status-pill status-success'>Active</span>" : "<span class='status-pill status-slate'>Inactive</span>")</div>
+                <div class="hms-card-body">
+                    <p class="text-muted text-xs">@t.Description</p>
+                    <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-xs text-muted">Base Rate</span><strong>@t.BaseRate.ToString("C")/night</strong></div>
+                    <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-xs text-muted">Max Occupancy</span><strong>@t.MaxOccupancy guests (@t.MaxAdults adults, @t.MaxChildren children)</strong></div>
+                    <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-xs text-muted">Bed Configuration</span><strong>@t.BedConfiguration</strong></div>
+                    <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-xs text-muted">Rooms of this type</span><strong>@count</strong></div>
+                    <div class="mt-2 d-flex flex-wrap gap-1">
+                        @foreach (var a in (t.AmenitiesCsv ?? "").Split(',').Where(x => !string.IsNullOrWhiteSpace(x)))
+                        {
+                            <span class="status-pill status-primary">@a.Trim()</span>
+                        }
+                    </div>
+                </div>
+                <div class="hms-card-body border-top d-flex gap-2">
+                    <button class="btn btn-sm btn-hms-outline edit-type-btn" data-id="@t.Id" data-name="@t.Name" data-desc="@t.Description" data-maxocc="@t.MaxOccupancy" data-maxad="@t.MaxAdults" data-maxch="@t.MaxChildren" data-bed="@t.BedConfiguration" data-rate="@t.BaseRate" data-amenities="@t.AmenitiesCsv" data-active="@t.Active.ToString().ToLower()"><i class="fa fa-pencil me-1"></i>Edit</button>
+                    <button class="btn btn-sm btn-hms-outline toggle-type-btn" data-id="@t.Id">@(t.Active ? "Deactivate" : "Activate")</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="modal fade" id="typeFormModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="typeForm">
+                <div class="modal-header"><h5 class="modal-title" id="typeFormTitle">Add Room Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <input type="hidden" id="tfId">
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">Room Type Name *</label><input type="text" class="form-control" id="tfName" required></div>
+                        <div class="col-md-6"><label class="form-label">Base Rate ($) *</label><input type="number" min="0" step="0.01" class="form-control" id="tfRate" required></div>
+                        <div class="col-12"><label class="form-label">Description</label><textarea class="form-control" id="tfDescription" rows="2"></textarea></div>
+                        <div class="col-md-4"><label class="form-label">Max Occupancy</label><input type="number" min="1" class="form-control" id="tfMaxOcc"></div>
+                        <div class="col-md-4"><label class="form-label">Max Adults</label><input type="number" min="1" class="form-control" id="tfMaxAdults"></div>
+                        <div class="col-md-4"><label class="form-label">Max Children</label><input type="number" min="0" class="form-control" id="tfMaxChildren"></div>
+                        <div class="col-12"><label class="form-label">Bed Configuration</label><input type="text" class="form-control" id="tfBed"></div>
+                        <div class="col-12"><label class="form-label">Amenities (comma separated)</label><input type="text" class="form-control" id="tfAmenities"></div>
+                        <div class="col-12 form-check mt-2"><input class="form-check-input" type="checkbox" id="tfActive" checked><label class="form-check-label" for="tfActive">Active</label></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-hms-outline" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-hms-primary">Save Room Type</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.RoomTypesUrls = { save: '@Url.Action("SaveRoomType")', toggle: '@Url.Action("ToggleActive")' };
+
+        $(function () {
+            function resetForm() { $("#typeForm")[0].reset(); $("#tfId").val(""); $("#tfActive").prop("checked", true); }
+
+            $("#addTypeBtn").on("click", function () { resetForm(); $("#typeFormTitle").text("Add Room Type"); new bootstrap.Modal(document.getElementById("typeFormModal")).show(); });
+
+            $(document).on("click", ".edit-type-btn", function () {
+                var d = $(this).data();
+                resetForm();
+                $("#tfId").val(d.id); $("#typeFormTitle").text("Edit Room Type -- " + d.name);
+                $("#tfName").val(d.name); $("#tfRate").val(d.rate); $("#tfDescription").val(d.desc);
+                $("#tfMaxOcc").val(d.maxocc); $("#tfMaxAdults").val(d.maxad); $("#tfMaxChildren").val(d.maxch);
+                $("#tfBed").val(d.bed); $("#tfAmenities").val(d.amenities); $("#tfActive").prop("checked", d.active === true || d.active === "true");
+                new bootstrap.Modal(document.getElementById("typeFormModal")).show();
+            });
+
+            $("#typeForm").on("submit", function (e) {
+                e.preventDefault();
+                var data = {
+                    id: $("#tfId").val() || null, name: $("#tfName").val().trim(), description: $("#tfDescription").val().trim(),
+                    maxOccupancy: $("#tfMaxOcc").val(), maxAdults: $("#tfMaxAdults").val(), maxChildren: $("#tfMaxChildren").val(),
+                    bedConfiguration: $("#tfBed").val(), baseRate: $("#tfRate").val(), amenitiesCsv: $("#tfAmenities").val(), active: $("#tfActive").is(":checked")
+                };
+                $.post(window.RoomTypesUrls.save, data).done(function (r) {
+                    if (!r.success) { App.toast(r.message, "error"); return; }
+                    App.toast("Room type saved.");
+                    bootstrap.Modal.getInstance(document.getElementById("typeFormModal")).hide();
+                    location.reload();
+                }).fail(App.ajaxError);
+            });
+
+            $(document).on("click", ".toggle-type-btn", function () {
+                var id = $(this).data("id");
+                App.confirmAction({ title: "Change active status?", confirmText: "Confirm" }).then(function (ok) {
+                    if (!ok) { return; }
+                    $.post(window.RoomTypesUrls.toggle, { id: id }).done(function () { App.toast("Updated."); location.reload(); }).fail(App.ajaxError);
+                });
+            });
+        });
+    </script>
+}

@@ -1,0 +1,179 @@
+@model Revelation.Front.Office.Web.ViewModels.DashboardViewModel
+@{
+    ViewBag.Title = "Dashboard";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Front Office Dashboard</h1>
+        <div class="text-muted">Live operational snapshot for today's shift.</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="@Url.Action("Index", "Calendar")" class="btn btn-hms-outline btn-sm"><i class="fa fa-calendar me-1"></i>Room Calendar</a>
+        <a href="@Url.Action("Create", "Reservations")" class="btn btn-hms-primary btn-sm"><i class="fa fa-plus me-1"></i>New Booking</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    @{
+        var kpis = new[] {
+            new { Label = "Total Rooms", Value = Model.Summary.TotalRooms.ToString(), Icon = "fa-building", Bg = "#e8eef4", Fg = "#1a3a5c" },
+            new { Label = "Available Rooms", Value = Model.Summary.AvailableRooms.ToString(), Icon = "fa-door-open", Bg = "#e5f6ef", Fg = "#1e9e6b" },
+            new { Label = "Occupied Rooms", Value = Model.Summary.OccupiedRooms.ToString(), Icon = "fa-bed", Bg = "#fbe9e7", Fg = "#c0392b" },
+            new { Label = "Reserved Rooms", Value = Model.Summary.ReservedRooms.ToString(), Icon = "fa-calendar-check-o", Bg = "#e8eef9", Fg = "#2f6fed" },
+            new { Label = "Under Maintenance", Value = Model.Summary.RoomsUnderMaintenance.ToString(), Icon = "fa-wrench", Bg = "#fdf3e0", Fg = "#b8860b" },
+            new { Label = "Today's Check-ins", Value = Model.Summary.TodaysCheckIns.ToString(), Icon = "fa-sign-in", Bg = "#e8eef4", Fg = "#1a3a5c" },
+            new { Label = "Today's Check-outs", Value = Model.Summary.TodaysCheckOuts.ToString(), Icon = "fa-sign-out", Bg = "#eceef1", Fg = "#5b6472" }
+        };
+    }
+    @foreach (var c in kpis)
+    {
+        <div class="col-6 col-md-4 col-xl-3 col-xxl">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:@c.Bg;color:@c.Fg;"><i class="fa @c.Icon"></i></div>
+                <div class="kpi-meta"><div class="kpi-value">@c.Value</div><div class="kpi-label">@c.Label</div></div>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-xl-7">
+        <div class="hms-card mb-3">
+            <div class="hms-card-header">
+                <h2><i class="fa fa-sign-in me-2 text-primary"></i>Today's Arrivals</h2>
+                <span class="text-muted text-xs">@Model.TodaysArrivals.Count arriving today</span>
+            </div>
+            <div class="hms-card-body p-0">
+                <div class="table-responsive">
+                    <table class="table hms-table mb-0">
+                        <thead><tr><th>Guest</th><th>Reservation No.</th><th>Room Type</th><th>Room</th><th>Arrival</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+                        <tbody>
+                            @if (!Model.TodaysArrivals.Any())
+                            {
+                                <tr><td colspan="7" class="text-center text-muted py-3">No arrivals scheduled for today.</td></tr>
+                            }
+                            @foreach (var r in Model.TodaysArrivals)
+                            {
+                                <tr>
+                                    <td><div class="fw-600">@r.Guest.FullName</div><div class="text-xs text-muted">@r.Guest.Phone</div></td>
+                                    <td>@r.ReservationNo</td>
+                                    <td>@r.RoomType.Name</td>
+                                    <td>@(r.Room != null ? r.Room.Number : "Unassigned")</td>
+                                    <td>@r.CheckIn.ToString("MMM d, yyyy")</td>
+                                    <td>@Html.Partial("_StatusPill", r.BookingStatus.ToString())</td>
+                                    <td class="text-end"><button class="btn btn-sm btn-hms-primary quick-checkin-btn" data-id="@r.Id"><i class="fa fa-sign-in me-1"></i>Check-in</button></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="hms-card mb-3">
+            <div class="hms-card-header">
+                <h2><i class="fa fa-sign-out me-2 text-primary"></i>Today's Departures</h2>
+                <span class="text-muted text-xs">@Model.TodaysDepartures.Count departing today</span>
+            </div>
+            <div class="hms-card-body p-0">
+                <div class="table-responsive">
+                    <table class="table hms-table mb-0">
+                        <thead><tr><th>Guest</th><th>Room</th><th>Check-out Date</th><th>Payment Status</th><th class="text-end">Action</th></tr></thead>
+                        <tbody>
+                            @if (!Model.TodaysDepartures.Any())
+                            {
+                                <tr><td colspan="5" class="text-center text-muted py-3">No departures scheduled for today.</td></tr>
+                            }
+                            @foreach (var r in Model.TodaysDepartures)
+                            {
+                                <tr>
+                                    <td><div class="fw-600">@r.Guest.FullName</div><div class="text-xs text-muted">@r.ReservationNo</div></td>
+                                    <td>@r.Room.Number</td>
+                                    <td>@r.CheckOut.ToString("MMM d, yyyy")</td>
+                                    <td>@Html.Partial("_StatusPill", r.PaymentStatus.ToString())</td>
+                                    <td class="text-end"><a href="@Url.Action("Index", "CheckOut", new { res = r.ReservationNo })" class="btn btn-sm btn-hms-outline"><i class="fa fa-sign-out me-1"></i>Check-out</a></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="hms-card">
+            <div class="hms-card-header">
+                <h2><i class="fa fa-bookmark me-2 text-primary"></i>Recent Reservations</h2>
+                <a href="@Url.Action("Index", "Reservations")" class="small">View all</a>
+            </div>
+            <div class="hms-card-body p-0">
+                <div class="table-responsive">
+                    <table class="table hms-table mb-0">
+                        <thead><tr><th>Reservation No.</th><th>Guest</th><th>Booked On</th><th>Check-in / Check-out</th><th>Status</th></tr></thead>
+                        <tbody>
+                            @foreach (var r in Model.RecentReservations)
+                            {
+                                <tr>
+                                    <td>@r.ReservationNo</td>
+                                    <td>@r.Guest.FullName</td>
+                                    <td>@r.CreatedDate.ToString("MMM d, yyyy")</td>
+                                    <td>@r.CheckIn.ToString("MMM d") &rarr; @r.CheckOut.ToString("MMM d, yyyy")</td>
+                                    <td>@Html.Partial("_StatusPill", r.BookingStatus.ToString())</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-5">
+        <div class="hms-card mb-3">
+            <div class="hms-card-header"><h2><i class="fa fa-pie-chart me-2 text-primary"></i>Current Hotel Occupancy</h2></div>
+            <div class="hms-card-body">
+                <div class="d-flex align-items-center gap-4 flex-wrap">
+                    <div class="occupancy-ring-wrap" style="width:160px;height:160px;">
+                        <canvas id="occupancyChart" width="160" height="160"></canvas>
+                        <div class="occupancy-ring-label">
+                            <span class="pct">@(Model.Summary.TotalRooms > 0 ? (Model.Summary.OccupiedRooms * 100 / Model.Summary.TotalRooms) : 0)%</span>
+                            <small>Occupied</small>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between py-2 border-bottom"><span class="legend-item"><span class="legend-swatch" style="background:#1a3a5c"></span>Occupied</span><strong>@Model.OccupiedCount</strong></div>
+                        <div class="d-flex justify-content-between py-2 border-bottom"><span class="legend-item"><span class="legend-swatch" style="background:#2f6fed"></span>Reserved</span><strong>@Model.ReservedCount</strong></div>
+                        <div class="d-flex justify-content-between py-2 border-bottom"><span class="legend-item"><span class="legend-swatch" style="background:#1e9e6b"></span>Available</span><strong>@Model.AvailableCount</strong></div>
+                        <div class="d-flex justify-content-between py-2"><span class="legend-item"><span class="legend-swatch" style="background:#b8860b"></span>Dirty / OOO</span><strong>@Model.OtherCount</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            var ctx = document.getElementById("occupancyChart").getContext("2d");
+            new Chart(ctx, {
+                type: "doughnut",
+                data: {
+                    labels: ["Occupied", "Reserved", "Available", "Dirty / OOO"],
+                    datasets: [{ data: [@Model.OccupiedCount, @Model.ReservedCount, @Model.AvailableCount, @Model.OtherCount], backgroundColor: ["#1a3a5c", "#2f6fed", "#1e9e6b", "#b8860b"], borderWidth: 0 }]
+                },
+                options: { cutout: "72%", plugins: { legend: { display: false } } }
+            });
+
+            $(document).on("click", ".quick-checkin-btn", function () {
+                var id = $(this).data("id");
+                App.confirmAction({ title: "Confirm check-in?", confirmText: "Check In" }).then(function (ok) {
+                    if (!ok) { return; }
+                    $.post("@Url.Action("QuickCheckIn", "Dashboard")", { reservationId: id })
+                        .done(function () { App.toast("Guest checked in."); location.reload(); })
+                        .fail(App.ajaxError);
+                });
+            });
+        });
+    </script>
+}

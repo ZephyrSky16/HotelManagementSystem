@@ -1,0 +1,109 @@
+@model Revelation.Front.Office.Web.ViewModels.RateListViewModel
+@{
+    ViewBag.Title = "Rate Management";
+}
+
+<div class="page-header">
+    <div><h1>Rate Management</h1><div class="text-muted">Configure rate plans and visually review pricing by date.</div></div>
+    <button class="btn btn-hms-primary btn-sm" id="addRateBtn"><i class="fa fa-plus me-1"></i>Add Rate Plan</button>
+</div>
+
+<div class="hms-card mb-3">
+    <div class="hms-card-header">
+        <h2>Rate Calendar</h2>
+        <div class="d-flex gap-2 align-items-center">
+            <select class="form-select form-select-sm" id="rcRoomType" style="width:180px;">
+                @foreach (var t in Model.RoomTypes)
+                {
+                    <option value="@t.Id">@t.Name</option>
+                }
+            </select>
+            <button class="btn btn-sm btn-hms-outline" id="rcPrevBtn"><i class="fa fa-chevron-left"></i></button>
+            <span class="fw-600" id="rcMonthLabel" style="min-width:140px;text-align:center;display:inline-block;"></span>
+            <button class="btn btn-sm btn-hms-outline" id="rcNextBtn"><i class="fa fa-chevron-right"></i></button>
+        </div>
+    </div>
+    <div class="hms-card-body"><div class="row g-2" id="rcGrid"></div></div>
+</div>
+
+<div class="hms-card">
+    <div class="hms-card-header"><h2>Rate Plans</h2></div>
+    <div class="hms-card-body p-2">
+        <div class="table-responsive">
+            <table class="table hms-table w-100" id="ratesTable">
+                <thead><tr><th>Room Type</th><th>Rate Plan</th><th>Type</th><th>Effective Start</th><th>Effective End</th><th>Daily Rate</th><th>Min Stay</th><th>Max Stay</th><th>Active</th><th>Actions</th></tr></thead>
+                <tbody>
+                    @foreach (var p in Model.RatePlans)
+                    {
+                        <tr>
+                            <td>@p.RoomType.Name</td><td>@p.RatePlanName</td><td>@p.RatePlanType</td>
+                            <td>@p.EffectiveStart.ToString("MMM d, yyyy")</td><td>@p.EffectiveEnd.ToString("MMM d, yyyy")</td>
+                            <td>@p.DailyRate.ToString("C")</td><td>@p.MinStay</td><td>@p.MaxStay</td>
+                            <td>@Html.Raw(p.Active ? "<span class='status-pill status-success'>Active</span>" : "<span class='status-pill status-slate'>Inactive</span>")</td>
+                            <td>
+                                <button class="btn btn-sm btn-hms-outline edit-rate-btn me-1" data-id="@p.Id" data-roomtypeid="@p.RoomTypeId" data-name="@p.RatePlanName" data-type="@p.RatePlanType" data-start="@p.EffectiveStart.ToString("yyyy-MM-dd")" data-end="@p.EffectiveEnd.ToString("yyyy-MM-dd")" data-rate="@p.DailyRate" data-min="@p.MinStay" data-max="@p.MaxStay" data-active="@p.Active.ToString().ToLower()"><i class="fa fa-pencil"></i></button>
+                                <button class="btn btn-sm btn-hms-outline toggle-rate-btn" data-id="@p.Id"><i class="fa fa-power-off"></i></button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="hms-card mt-3">
+    <div class="hms-card-header"><h2>Extra Person &amp; Child Charges</h2></div>
+    <div class="hms-card-body p-2">
+        <div class="table-responsive">
+            <table class="table hms-table mb-0">
+                <thead><tr><th>Room Type</th><th>Extra Person Charge</th><th>Child Rate</th></tr></thead>
+                <tbody>
+                    @foreach (var e in Model.ExtraCharges)
+                    {
+                        <tr>
+                            <td>@e.RoomType.Name</td>
+                            <td><div class="input-group input-group-sm" style="width:140px;"><span class="input-group-text">$</span><input type="number" class="form-control extra-charge-input" data-roomtypeid="@e.RoomTypeId" data-field="extraPersonCharge" value="@e.ExtraPersonCharge"></div></td>
+                            <td><div class="input-group input-group-sm" style="width:140px;"><span class="input-group-text">$</span><input type="number" class="form-control extra-charge-input" data-roomtypeid="@e.RoomTypeId" data-field="childRate" value="@e.ChildRate"></div></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="rateFormModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="rateForm">
+                <div class="modal-header"><h5 class="modal-title" id="rateFormTitle">Add Rate Plan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <input type="hidden" id="rfId">
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">Room Type *</label><select class="form-select" id="rfRoomType">@foreach (var t in Model.RoomTypes) { <option value="@t.Id">@t.Name</option> }</select></div>
+                        <div class="col-md-6"><label class="form-label">Rate Plan Type *</label><select class="form-select" id="rfPlanType"><option>Standard</option><option>Weekday</option><option>Weekend</option><option>Seasonal</option><option>Holiday</option><option>Promotional</option></select></div>
+                        <div class="col-12"><label class="form-label">Rate Plan Name *</label><input type="text" class="form-control" id="rfPlanName" required></div>
+                        <div class="col-md-6"><label class="form-label">Effective Start *</label><input type="text" class="form-control" id="rfStart" required></div>
+                        <div class="col-md-6"><label class="form-label">Effective End *</label><input type="text" class="form-control" id="rfEnd" required></div>
+                        <div class="col-md-4"><label class="form-label">Daily Rate ($) *</label><input type="number" min="0" step="0.01" class="form-control" id="rfDailyRate" required></div>
+                        <div class="col-md-4"><label class="form-label">Min Stay</label><input type="number" min="1" value="1" class="form-control" id="rfMinStay"></div>
+                        <div class="col-md-4"><label class="form-label">Max Stay</label><input type="number" min="1" value="30" class="form-control" id="rfMaxStay"></div>
+                        <div class="col-12 form-check mt-2"><input class="form-check-input" type="checkbox" id="rfActive" checked><label class="form-check-label" for="rfActive">Active</label></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-hms-outline" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-hms-primary">Save Rate Plan</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.RatesUrls = {
+            save: '@Url.Action("SaveRatePlan")', toggle: '@Url.Action("ToggleActive")',
+            saveExtra: '@Url.Action("SaveExtraCharge")', getRateForDate: '@Url.Action("GetRateForDate")'
+        };
+    </script>
+    <script src="~/Scripts/rates.js"></script>
+}

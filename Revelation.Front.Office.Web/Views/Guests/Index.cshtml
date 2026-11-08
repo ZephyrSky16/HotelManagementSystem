@@ -1,0 +1,72 @@
+@model Revelation.Front.Office.Web.ViewModels.GuestListViewModel
+@{
+    ViewBag.Title = "Guest Management";
+}
+
+<div class="page-header">
+    <div><h1>Guest Management</h1><div class="text-muted">Guest profiles, stay history, and duplicate detection.</div></div>
+</div>
+
+@if (Model.Duplicates.Any())
+{
+    <div class="alert alert-warning d-flex gap-2 mb-3">
+        <i class="fa fa-exclamation-triangle mt-1"></i>
+        <div>
+            <strong>Possible duplicate guest profiles detected</strong>
+            <ul class="mb-0 mt-1">
+                @foreach (var d in Model.Duplicates)
+                {
+                    <li>@string.Join(" & ", d.Select(g => g.FullName + " (" + g.Id + ")")) share the same contact details.</li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+
+<div class="hms-card">
+    <div class="hms-card-header"><h2>Guest Directory</h2><input type="search" class="form-control form-control-sm" style="width:260px;" id="guestSearch" placeholder="Search name, email, or phone..."></div>
+    <div class="hms-card-body p-2">
+        <div class="table-responsive">
+            <table class="table hms-table table-hover w-100" id="guestsTable">
+                <thead><tr><th>Guest ID</th><th>Guest Name</th><th>Contact Number</th><th>Email</th><th>Nationality</th><th>Total Reservations</th><th>Last Visit</th><th>Actions</th></tr></thead>
+                <tbody>
+                    @foreach (var g in Model.Guests)
+                    {
+                        <tr>
+                            <td>G-@g.Id</td><td><strong>@g.FullName</strong></td><td>@g.Phone</td><td>@g.Email</td><td>@g.Nationality</td>
+                            <td>@(Model.ReservationCounts.ContainsKey(g.Id) ? Model.ReservationCounts[g.Id] : 0)</td><td>@(Model.LastVisitByGuest.ContainsKey(g.Id) ? Model.LastVisitByGuest[g.Id].ToString("MMM d, yyyy") : "--")</td>
+                            <td><button class="btn btn-sm btn-hms-outline view-guest-btn" data-id="@g.Id"><i class="fa fa-eye me-1"></i>View</button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="guestDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Guest Details</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body" id="guestDetailsBody">Loading...</div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.8/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(function () {
+            $("#guestsTable").DataTable({ pageLength: 10, lengthChange: false });
+            $("#guestSearch").on("input", function () { $("#guestsTable").DataTable().search($(this).val()).draw(); });
+
+            $(document).on("click", ".view-guest-btn", function () {
+                var id = $(this).data("id");
+                $("#guestDetailsBody").html("Loading...");
+                new bootstrap.Modal(document.getElementById("guestDetailsModal")).show();
+                $.get('@Url.Action("GetGuestDetails")', { id: id }).done(function (html) { $("#guestDetailsBody").html(html); }).fail(App.ajaxError);
+            });
+        });
+    </script>
+}

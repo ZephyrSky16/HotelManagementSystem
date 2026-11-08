@@ -1,0 +1,104 @@
+@model Revelation.Front.Office.Web.ViewModels.RoomListViewModel
+@{
+    ViewBag.Title = "Room Management";
+}
+
+<div class="page-header">
+    <div><h1>Room Management</h1><div class="text-muted">Manage individual rooms, their type assignment, and current status.</div></div>
+    <button class="btn btn-hms-primary btn-sm" id="addRoomBtn"><i class="fa fa-plus me-1"></i>Add Room</button>
+</div>
+
+<div class="hms-card">
+    <div class="hms-card-header"><h2>All Rooms</h2><input type="search" class="form-control form-control-sm" style="width:220px;" id="roomsSearch" placeholder="Search room number or type..."></div>
+    <div class="hms-card-body p-2">
+        <div class="table-responsive">
+            <table class="table hms-table table-hover w-100" id="roomsTable">
+                <thead><tr><th>Room No.</th><th>Room Name</th><th>Room Type</th><th>Floor</th><th>Capacity</th><th>Bed Config</th><th>Room Status</th><th>Housekeeping</th><th>Base Rate</th><th>Active</th><th>Actions</th></tr></thead>
+                <tbody>
+                    @foreach (var r in Model.Rooms.OrderBy(x => x.Number))
+                    {
+                        <tr>
+                            <td><strong>@r.Number</strong></td>
+                            <td>@(r.Name ?? "--")</td>
+                            <td>@r.RoomType.Name</td>
+                            <td>@r.Floor</td>
+                            <td>@r.Capacity</td>
+                            <td>@r.BedConfiguration</td>
+                            <td>@Html.Partial("_StatusPill", r.Status.ToString())</td>
+                            <td>@Html.Partial("_StatusPill", r.HousekeepingStatus.ToString())</td>
+                            <td>@r.BaseRate.ToString("C")</td>
+                            <td>@Html.Raw(r.Active ? "<span class=\"status-pill status-success\">Active</span>" : "<span class=\"status-pill status-slate\">Inactive</span>")</td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="table-action-btn" data-bs-toggle="dropdown"><i class="fa fa-ellipsis-v"></i></button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item view-room-btn" href="#" data-id="@r.Id"><i class="fa fa-eye me-2"></i>View Details</a></li>
+                                        <li><a class="dropdown-item edit-room-btn" href="#" data-id="@r.Id"><i class="fa fa-pencil me-2"></i>Edit Room</a></li>
+                                        <li><a class="dropdown-item toggle-active-btn" href="#" data-id="@r.Id"><i class="fa fa-power-off me-2"></i>@(r.Active ? "Deactivate" : "Activate") Room</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="roomFormModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="roomForm">
+                <div class="modal-header"><h5 class="modal-title" id="roomFormTitle">Add Room</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <input type="hidden" id="rfId">
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">Room Number *</label><input type="text" class="form-control" id="rfNumber" required></div>
+                        <div class="col-md-6"><label class="form-label">Room Name (optional)</label><input type="text" class="form-control" id="rfName"></div>
+                        <div class="col-md-6">
+                            <label class="form-label">Room Type *</label>
+                            <select class="form-select" id="rfType" required>
+                                @foreach (var t in Model.RoomTypes)
+                                {
+                                    <option value="@t.Id" data-rate="@t.BaseRate" data-capacity="@t.MaxOccupancy" data-bed="@t.BedConfiguration">@t.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6"><label class="form-label">Floor *</label><input type="number" min="1" class="form-control" id="rfFloor" required></div>
+                        <div class="col-md-4"><label class="form-label">Capacity</label><input type="number" min="1" class="form-control" id="rfCapacity"></div>
+                        <div class="col-md-8"><label class="form-label">Bed Configuration</label><input type="text" class="form-control" id="rfBed"></div>
+                        <div class="col-md-6"><label class="form-label">Base Rate ($)</label><input type="number" min="0" step="0.01" class="form-control" id="rfRate"></div>
+                        <div class="col-md-6">
+                            <label class="form-label">Room Status</label>
+                            <select class="form-select" id="rfStatus"><option>Available</option><option>Occupied</option><option>Reserved</option><option>OutOfOrder</option><option>UnderMaintenance</option></select>
+                        </div>
+                        <div class="col-12 form-check mt-2"><input class="form-check-input" type="checkbox" id="rfActive" checked><label class="form-check-label" for="rfActive">Room is active and bookable</label></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-hms-outline" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-hms-primary">Save Room</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="roomDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Room Details</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body" id="roomDetailsBody">Loading...</div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.8/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        window.RoomsUrls = {
+            saveRoom: '@Url.Action("SaveRoom")', toggleActive: '@Url.Action("ToggleActive")',
+            getRoomDetails: '@Url.Action("GetRoomDetails")'
+        };
+    </script>
+    <script src="~/Scripts/rooms.js"></script>
+}

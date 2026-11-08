@@ -1,0 +1,119 @@
+@model Revelation.Front.Office.Web.ViewModels.MaintenanceListViewModel
+@{
+    ViewBag.Title = "Maintenance Management";
+}
+
+<div class="page-header">
+    <div><h1>Maintenance Management</h1><div class="text-muted">Track and resolve room maintenance requests.</div></div>
+    <button class="btn btn-hms-primary btn-sm" id="addRequestBtn"><i class="fa fa-plus me-1"></i>Create Maintenance Request</button>
+</div>
+
+@{
+    var open = Model.Requests.Count(r => r.Status.ToString() != "Completed" && r.Status.ToString() != "Cancelled");
+    var critical = Model.Requests.Count(r => r.Priority.ToString() == "Critical" && r.Status.ToString() != "Completed" && r.Status.ToString() != "Cancelled");
+    var completed = Model.Requests.Count(r => r.Status.ToString() == "Completed");
+    var oorRooms = Model.Rooms.Count(r => r.Status.ToString() == "OutOfOrder");
+}
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#e8eef4;color:#1a3a5c;"><i class="fa fa-wrench"></i></div><div class="kpi-meta"><div class="kpi-value">@open</div><div class="kpi-label">Open Requests</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#fbe9e7;color:#c0392b;"><i class="fa fa-exclamation-triangle"></i></div><div class="kpi-meta"><div class="kpi-value">@critical</div><div class="kpi-label">Critical / High Priority</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#e5f6ef;color:#1e9e6b;"><i class="fa fa-check-circle"></i></div><div class="kpi-meta"><div class="kpi-value">@completed</div><div class="kpi-label">Completed</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#fdf3e0;color:#b8860b;"><i class="fa fa-door-closed"></i></div><div class="kpi-meta"><div class="kpi-value">@oorRooms</div><div class="kpi-label">Rooms Out of Order</div></div></div></div>
+</div>
+
+<div class="hms-card">
+    <div class="hms-card-header"><h2>Maintenance Requests</h2><input type="search" class="form-control form-control-sm" style="width:220px;" id="mSearch" placeholder="Search room or request #..."></div>
+    <div class="hms-card-body p-2">
+        <div class="table-responsive">
+            <table class="table hms-table w-100" id="maintTable">
+                <thead><tr><th>Request No.</th><th>Room</th><th>Category</th><th>Priority</th><th>Reported By</th><th>Assigned To</th><th>Reported</th><th>Expected</th><th>Status</th></tr></thead>
+                <tbody>
+                    @foreach (var m in Model.Requests.OrderByDescending(x => x.ReportedDate))
+                    {
+                        <tr>
+                            <td>@m.RequestNo</td><td>Room @m.Room.Number</td><td>@m.Category</td>
+                            <td>@Html.Partial("_StatusPill", m.Priority.ToString())</td>
+                            <td>@m.ReportedBy</td><td>@(m.AssignedPersonnel ?? "Unassigned")</td>
+                            <td>@m.ReportedDate.ToString("MMM d, yyyy")</td>
+                            <td>@(m.ExpectedCompletion.HasValue ? m.ExpectedCompletion.Value.ToString("MMM d, yyyy") : "--")</td>
+                            <td>
+                                <select class="form-select form-select-sm status-select" data-id="@m.Id" style="width:130px;">
+                                    @foreach (var s in new[] { "Reported", "Assigned", "InProgress", "OnHold", "Completed", "Cancelled" })
+                                    {
+                                        if (s == m.Status.ToString())
+                                        {
+                                            <option selected>@s</option>
+                                        }
+                                        else
+                                        {
+                                            <option>@s</option>
+                                        }
+                                    }
+                                </select>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="requestFormModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="requestForm">
+                <div class="modal-header"><h5 class="modal-title">Create Maintenance Request</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">Room *</label><select class="form-select" id="mfRoom" required>@foreach (var r in Model.Rooms.OrderBy(x => x.Number)) { <option value="@r.Id">Room @r.Number -- @r.RoomType.Name</option> }</select></div>
+                        <div class="col-md-6"><label class="form-label">Category *</label><select class="form-select" id="mfCategory" required><option>Electrical</option><option>Plumbing</option><option>AirConditioning</option><option>Furniture</option><option>Appliances</option><option>InternetNetwork</option><option>Structural</option><option>GeneralMaintenance</option></select></div>
+                        <div class="col-12"><label class="form-label">Description *</label><textarea class="form-control" id="mfDescription" rows="2" required></textarea></div>
+                        <div class="col-md-4"><label class="form-label">Priority *</label><select class="form-select" id="mfPriority" required><option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option></select></div>
+                        <div class="col-md-4"><label class="form-label">Reported By</label><input type="text" class="form-control" id="mfReportedBy" value="Mariel Santos (Front Desk)"></div>
+                        <div class="col-md-4"><label class="form-label">Assigned Personnel</label><select class="form-select" id="mfAssigned"><option value="">Unassigned</option>@foreach (var p in Model.Personnel) { <option>@p</option> }</select></div>
+                        <div class="col-md-6"><label class="form-label">Expected Completion</label><input type="text" class="form-control" id="mfExpected"></div>
+                        <div class="col-md-6 form-check d-flex align-items-end pb-2"><div><input class="form-check-input" type="checkbox" id="mfMarkOOO"><label class="form-check-label" for="mfMarkOOO">Mark room Out of Order while repairs are pending</label></div></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-hms-outline" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-hms-primary">Submit Request</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.MaintUrls = { create: '@Url.Action("CreateRequest")', updateStatus: '@Url.Action("UpdateStatus")' };
+        if (window.flatpickr) { flatpickr("#mfExpected", { dateFormat: "Y-m-d", minDate: "today" }); }
+
+        $(function () {
+            $("#maintTable").DataTable({ pageLength: 10, lengthChange: false, order: [[6, "desc"]] });
+            $("#mSearch").on("input", function () { $("#maintTable").DataTable().search($(this).val()).draw(); });
+
+            $("#addRequestBtn").on("click", function () { new bootstrap.Modal(document.getElementById("requestFormModal")).show(); });
+
+            $("#requestForm").on("submit", function (e) {
+                e.preventDefault();
+                var data = {
+                    roomId: $("#mfRoom").val(), category: $("#mfCategory").val(), description: $("#mfDescription").val(),
+                    priority: $("#mfPriority").val(), reportedBy: $("#mfReportedBy").val(), assignedPersonnel: $("#mfAssigned").val(),
+                    expectedCompletion: $("#mfExpected").val(), markRoomOutOfOrder: $("#mfMarkOOO").is(":checked")
+                };
+                $.post(window.MaintUrls.create, data).done(function (r) {
+                    App.toast("Maintenance request " + r.requestNo + " created.");
+                    bootstrap.Modal.getInstance(document.getElementById("requestFormModal")).hide();
+                    location.reload();
+                }).fail(App.ajaxError);
+            });
+
+            $(document).on("change", ".status-select", function () {
+                var id = $(this).data("id");
+                $.post(window.MaintUrls.updateStatus, { id: id, status: $(this).val() }).done(function () {
+                    App.toast("Request status updated.");
+                    location.reload();
+                }).fail(App.ajaxError);
+            });
+        });
+    </script>
+}

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{3D0A1E8C-2AE9-4B61-8373-9C7FCD5EAFF9}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Revelation.Front.Office.Services</RootNamespace>
+    <AssemblyName>Revelation.Front.Office.Services</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <LangVersion>7.3</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="**\*.cs" Exclude="bin\**;obj\**" />
+  </ItemGroup>
+
+  <!--
+    Business logic. Classic MSBuild project references are not transitive
+    for compilation, so even though Core already references Models, this
+    project references both directly (its code uses entity types from
+    Models). Deliberately does NOT reference Repositories: for this
+    migration phase the implementations run against MockDataStore (ported
+    1:1 from the original mock-data.js) rather than the EF6 repositories.
+    Swapping to the EF6-backed path later is a composition-root change in
+    Web, not a change to this project's own dependencies.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Revelation.Front.Office.Core\Revelation.Front.Office.Core.csproj">
+      <Project>{0AD9F586-51A5-44BA-B111-991C08B48995}</Project>
+      <Name>Revelation.Front.Office.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Revelation.Front.Office.Models\Revelation.Front.Office.Models.csproj">
+      <Project>{19CD8A67-8097-4305-BE6F-9CEDCA41C189}</Project>
+      <Name>Revelation.Front.Office.Models</Name>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

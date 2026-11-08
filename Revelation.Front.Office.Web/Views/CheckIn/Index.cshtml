@@ -1,0 +1,114 @@
+@model Revelation.Front.Office.Web.ViewModels.CheckInIndexViewModel
+@{
+    ViewBag.Title = "Check-in";
+}
+
+<div class="page-header">
+    <div><h1>Check-in</h1><div class="text-muted">Search for a reservation to begin the arrival process.</div></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-lg-4">
+        <div class="hms-card mb-3">
+            <div class="hms-card-body"><label class="form-label">Search Reservation</label><input type="search" class="form-control" id="ciSearchInput" placeholder="Guest name or reservation #..."></div>
+        </div>
+        <div class="hms-card">
+            <div class="hms-card-header"><h2>Pending Arrivals</h2></div>
+            <div class="hms-card-body p-0" id="ciArrivalsList" style="max-height:60vh;overflow:auto;">
+                @foreach (var r in Model.PendingArrivals)
+                {
+                    <a href="#" class="d-block text-decoration-none text-dark border-bottom px-3 py-2 arrival-item" data-id="@r.Id">
+                        <div class="d-flex justify-content-between"><span class="fw-600">@r.Guest.FullName</span>@Html.Partial("_StatusPill", r.BookingStatus.ToString())</div>
+                        <div class="text-xs text-muted">@r.ReservationNo &middot; @r.RoomType.Name &middot; Room @(r.Room != null ? r.Room.Number : "Unassigned")</div>
+                        <div class="text-xs text-muted">Arrival: @r.CheckIn.ToString("MMM d, yyyy")</div>
+                    </a>
+                }
+                @if (!Model.PendingArrivals.Any())
+                {
+                    <div class="text-center text-muted py-4 small">No pending arrivals found.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-8">
+        <div id="ciEmptyState" class="hms-card">
+            <div class="hms-card-body text-center text-muted py-5"><i class="fa fa-user-circle fa-3x d-block mb-2"></i>Select a reservation from the list to verify guest details and complete check-in.</div>
+        </div>
+
+        <div id="ciPanel" style="display:none;">
+            <div class="hms-card mb-3">
+                <div class="hms-card-header"><h2 id="ciGuestName">--</h2><span id="ciResBadge"></span></div>
+                <div class="hms-card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">Contact Number</label><input type="text" class="form-control" id="ciPhone"></div>
+                        <div class="col-md-6"><label class="form-label">Email Address</label><input type="text" class="form-control" id="ciEmail"></div>
+                        <div class="col-md-6"><label class="form-label">Nationality</label><input type="text" class="form-control" id="ciNationality"></div>
+                        <div class="col-md-3"><label class="form-label">ID Type</label><input type="text" class="form-control" id="ciIdType" readonly></div>
+                        <div class="col-md-3"><label class="form-label">ID Number</label><input type="text" class="form-control" id="ciIdNumber"></div>
+                    </div>
+                    <div class="form-check mt-3"><input class="form-check-input" type="checkbox" id="ciIdVerified"><label class="form-check-label" for="ciIdVerified">Identification document verified against guest profile</label></div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <div class="hms-card h-100">
+                        <div class="hms-card-header"><h2>Room Assignment</h2><a href="#" class="small" id="ciChangeRoomLink">Change</a></div>
+                        <div class="hms-card-body">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="kpi-icon" style="background:#e8eef4;color:#1a3a5c;"><i class="fa fa-door-closed"></i></div>
+                                <div><div class="fw-600 fs-5" id="ciRoomNumber">--</div><div class="text-muted text-xs" id="ciRoomMeta">--</div></div>
+                            </div>
+                            <div id="ciRoomPicker" class="mt-3" style="display:none;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="hms-card h-100">
+                        <div class="hms-card-header"><h2>Stay Details</h2></div>
+                        <div class="hms-card-body">
+                            <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted text-xs">Check-in / Check-out</span><strong id="ciDates">--</strong></div>
+                            <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted text-xs">Nights</span><strong id="ciNights">--</strong></div>
+                            <div class="d-flex justify-content-between py-1"><span class="text-muted text-xs">Guests</span><strong id="ciGuests">--</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hms-card mb-3">
+                <div class="hms-card-header"><h2>Billing &amp; Payment</h2></div>
+                <div class="hms-card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3"><div class="text-muted text-xs">Total Amount</div><div class="fs-5 fw-600" id="ciTotal">--</div></div>
+                        <div class="col-md-3"><div class="text-muted text-xs">Amount Paid</div><div class="fs-5 fw-600 text-success" id="ciPaid">--</div></div>
+                        <div class="col-md-3"><div class="text-muted text-xs">Outstanding Balance</div><div class="fs-5 fw-600 text-danger" id="ciBalance">--</div></div>
+                        <div class="col-md-3">
+                            <label class="form-label">Record Payment</label>
+                            <div class="input-group"><span class="input-group-text">$</span><input type="number" class="form-control" id="ciPaymentAmount" min="0" step="0.01"><button class="btn btn-hms-outline" id="ciRecordPaymentBtn" type="button">Apply</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-hms-outline" id="ciCancelBtn">Clear Selection</button>
+                <button class="btn btn-hms-primary btn-lg" id="ciConfirmBtn"><i class="fa fa-sign-in me-1"></i>Confirm Check-in</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.CheckInUrls = {
+            getReservation: '@Url.Action("GetReservation")',
+            getAlternateRooms: '@Url.Action("GetAlternateRooms")',
+            assignRoom: '@Url.Action("AssignRoom")',
+            recordPayment: '@Url.Action("RecordPayment")',
+            confirm: '@Url.Action("Confirm")'
+        };
+        window.PreselectReservationId = @(Html.Raw(string.IsNullOrEmpty(ViewBag.PreselectReservationNo) ? "null" : "null"));
+    </script>
+    <script src="~/Scripts/checkin.js"></script>
+}

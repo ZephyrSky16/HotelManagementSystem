@@ -1,0 +1,64 @@
+@model Revelation.Front.Office.Web.ViewModels.RevenueReportViewModel
+@{
+    ViewBag.Title = "Revenue Report";
+    var adr = Model.TotalNights > 0 ? Model.TotalRevenue / Model.TotalNights : 0;
+    var revpar = Model.TotalRooms > 0 ? Model.TotalRevenue / Model.TotalRooms : 0;
+}
+
+<div class="page-header">
+    <div><h1>Revenue Report</h1><div class="text-muted">Room revenue performance by type.</div></div>
+</div>
+
+@using (Html.BeginForm("Revenue", "Reports", FormMethod.Get))
+{
+    <div class="hms-card mb-3">
+        <div class="hms-card-body py-2 d-flex gap-2 align-items-center flex-wrap">
+            <label class="small text-muted">Stay From</label>
+            <input type="date" name="start" class="form-control form-control-sm" style="width:160px;" value="@Model.Start.ToString("yyyy-MM-dd")">
+            <label class="small text-muted">To</label>
+            <input type="date" name="end" class="form-control form-control-sm" style="width:160px;" value="@Model.End.ToString("yyyy-MM-dd")">
+            <button type="submit" class="btn btn-hms-outline btn-sm">Apply</button>
+        </div>
+    </div>
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#e5f6ef;color:#1e9e6b;"><i class="fa fa-money"></i></div><div class="kpi-meta"><div class="kpi-value">@Model.TotalRevenue.ToString("C")</div><div class="kpi-label">Total Revenue</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#e8eef4;color:#1a3a5c;"><i class="fa fa-dollar"></i></div><div class="kpi-meta"><div class="kpi-value">@adr.ToString("C")</div><div class="kpi-label">Average Daily Rate</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#e8eef9;color:#2f6fed;"><i class="fa fa-line-chart"></i></div><div class="kpi-meta"><div class="kpi-value">@revpar.ToString("C")</div><div class="kpi-label">RevPAR</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#fbe9e7;color:#c0392b;"><i class="fa fa-exclamation-circle"></i></div><div class="kpi-meta"><div class="kpi-value">@Model.TotalBalance.ToString("C")</div><div class="kpi-label">Outstanding Balance</div></div></div></div>
+</div>
+
+<div class="hms-card mb-3">
+    <div class="hms-card-header"><h2>Revenue by Room Type</h2></div>
+    <div class="hms-card-body"><canvas id="rrChart" height="100"></canvas></div>
+</div>
+
+<div class="hms-card">
+    <div class="hms-card-header"><h2>Room Revenue Breakdown</h2></div>
+    <div class="hms-card-body p-0">
+        <table class="table hms-table mb-0">
+            <thead><tr><th>Room Type</th><th>Reservations</th><th>Room-Nights</th><th>Revenue</th><th>Average Daily Rate</th></tr></thead>
+            <tbody>
+                @foreach (var t in Model.ByType)
+                {
+                    <tr><td>@t.RoomTypeName</td><td>@t.Reservations</td><td>@t.RoomNights</td><td>@t.Revenue.ToString("C")</td><td>@t.Adr.ToString("C")</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            var labels = [@Html.Raw(string.Join(",", Model.ByType.Select(t => "\"" + t.RoomTypeName + "\"")))];
+            var data = [@string.Join(",", Model.ByType.Select(t => t.Revenue))];
+            new Chart(document.getElementById("rrChart").getContext("2d"), {
+                type: "bar",
+                data: { labels: labels, datasets: [{ data: data, backgroundColor: "#1a3a5c", borderRadius: 4 }] },
+                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            });
+        });
+    </script>
+}

@@ -1,0 +1,149 @@
+@model Revelation.Front.Office.Web.ViewModels.ReservationListViewModel
+@{
+    ViewBag.Title = "Reservations";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Reservations / Bookings</h1>
+        <div class="text-muted">Search, filter, and manage all hotel reservations.</div>
+    </div>
+    <a href="@Url.Action("Create")" class="btn btn-hms-primary btn-sm"><i class="fa fa-plus me-1"></i>New Booking</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<div class="hms-card mb-3">
+    <div class="hms-card-body py-3">
+        <div class="row g-2">
+            <div class="col-md-3">
+                <label class="form-label mb-1">Guest Name or Reservation #</label>
+                <input type="search" class="form-control form-control-sm" id="filterSearch" placeholder="e.g. Ethan Walker or RES-20214">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label mb-1">Booking Status</label>
+                <select class="form-select form-select-sm" id="filterStatus">
+                    <option value="">All Statuses</option>
+                    <option>Tentative</option><option>Confirmed</option><option>CheckedIn</option><option>CheckedOut</option><option>Cancelled</option><option>NoShow</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label mb-1">Room Type</label>
+                <select class="form-select form-select-sm" id="filterRoomType">
+                    <option value="">All Room Types</option>
+                    @foreach (var t in Model.RoomTypes)
+                    {
+                        <option value="@t.Name">@t.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-hms-outline btn-sm w-100" id="clearFiltersBtn"><i class="fa fa-times-circle me-1"></i>Clear Filters</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="hms-card">
+    <div class="hms-card-body p-2">
+        <div class="table-responsive">
+            <table class="table hms-table table-hover w-100" id="reservationsTable">
+                <thead>
+                    <tr>
+                        <th>Reservation No.</th><th>Guest Name</th><th>Contact Number</th><th>Room Type</th><th>Room</th>
+                        <th>Check-in</th><th>Check-out</th><th>Nights</th><th>Total Amount</th><th>Payment</th><th>Status</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Reservations)
+                    {
+                        <tr data-resno="@r.ReservationNo">
+                            <td>@r.ReservationNo</td>
+                            <td>@r.Guest.FullName</td>
+                            <td>@r.Guest.Phone</td>
+                            <td>@r.RoomType.Name</td>
+                            <td>@(r.Room != null ? r.Room.Number : "Unassigned")</td>
+                            <td>@r.CheckIn.ToString("MMM d, yyyy")</td>
+                            <td>@r.CheckOut.ToString("MMM d, yyyy")</td>
+                            <td>@r.Nights</td>
+                            <td>@r.TotalAmount.ToString("C")</td>
+                            <td>@Html.Partial("_StatusPill", r.PaymentStatus.ToString())</td>
+                            <td>@Html.Partial("_StatusPill", r.BookingStatus.ToString())</td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="table-action-btn" data-bs-toggle="dropdown"><i class="fa fa-ellipsis-v"></i></button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="@Url.Action("Edit", new { id = r.Id })"><i class="fa fa-pencil me-2"></i>View / Edit</a></li>
+                                        @if (r.BookingStatus == Revelation.Front.Office.Models.Common.BookingStatus.Confirmed || r.BookingStatus == Revelation.Front.Office.Models.Common.BookingStatus.Tentative)
+                                        {
+                                            <li><a class="dropdown-item checkin-btn" href="#" data-id="@r.Id"><i class="fa fa-sign-in me-2"></i>Check-in</a></li>
+                                            <li><a class="dropdown-item text-danger cancel-btn" href="#" data-id="@r.Id"><i class="fa fa-times-circle me-2"></i>Cancel Reservation</a></li>
+                                        }
+                                        @if (r.BookingStatus == Revelation.Front.Office.Models.Common.BookingStatus.CheckedIn)
+                                        {
+                                            <li><a class="dropdown-item" href="@Url.Action("Index", "CheckOut", new { res = r.ReservationNo })"><i class="fa fa-sign-out me-2"></i>Check-out</a></li>
+                                        }
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.8/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(function () {
+            var table = $("#reservationsTable").DataTable({ pageLength: 10, lengthChange: false, order: [[5, "desc"]] });
+
+            $("#filterSearch").on("input", function () { table.search($(this).val()).draw(); });
+
+            $.fn.dataTable.ext.search.push(function (settings, searchData, dataIndex) {
+                var row = table.row(dataIndex).node();
+                var status = $(row).find("td:eq(10)").text().trim();
+                var roomType = $(row).find("td:eq(3)").text().trim();
+                var filterStatus = $("#filterStatus").val();
+                var filterRoomType = $("#filterRoomType").val();
+                if (filterStatus && status.replace(/\s/g, "") !== filterStatus.replace(/\s/g, "")) { return false; }
+                if (filterRoomType && roomType !== filterRoomType) { return false; }
+                return true;
+            });
+            $("#filterStatus, #filterRoomType").on("change", function () { table.draw(); });
+            $("#clearFiltersBtn").on("click", function () {
+                $("#filterSearch").val(""); $("#filterStatus").val(""); $("#filterRoomType").val("");
+                table.search("").draw();
+            });
+
+            $(document).on("click", ".checkin-btn", function (e) {
+                e.preventDefault();
+                var id = $(this).data("id");
+                App.confirmAction({ title: "Confirm check-in?", confirmText: "Check In" }).then(function (ok) {
+                    if (!ok) { return; }
+                    $.post("@Url.Action("QuickCheckIn")", { reservationId: id }).done(function (r) {
+                        if (!r.success) { App.toast(r.message, "error"); return; }
+                        App.toast("Checked in."); location.reload();
+                    }).fail(App.ajaxError);
+                });
+            });
+
+            $(document).on("click", ".cancel-btn", function (e) {
+                e.preventDefault();
+                var id = $(this).data("id");
+                App.confirmAction({ title: "Cancel this reservation?", danger: true, confirmText: "Cancel Reservation" }).then(function (ok) {
+                    if (!ok) { return; }
+                    $.post("@Url.Action("CancelReservation")", { reservationId: id }).done(function () {
+                        App.toast("Reservation cancelled.", "warning"); location.reload();
+                    }).fail(App.ajaxError);
+                });
+            });
+        });
+    </script>
+}
