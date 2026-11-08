@@ -1,0 +1,91 @@
+@model List<Revelation.Front.Office.Models.HotellingSystem.Reservation>
+@{
+    ViewBag.Title = "Reservations (HotellingSystem)";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Reservations</h1>
+        <div class="text-muted">Reservation records stored in the HotellingSystem database.</div>
+    </div>
+    <a href="@Url.Action("Create")" class="btn btn-hms-primary btn-sm"><i class="fa fa-plus me-1"></i>New Reservation</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+@Html.AntiForgeryToken()
+
+<div class="hms-card">
+    <div class="hms-card-body p-2">
+        <div class="table-responsive">
+            <table class="table hms-table table-hover w-100" id="reservationRecordsTable">
+                <thead>
+                    <tr>
+                        <th>Id</th><th>Status</th><th>Booking Code</th><th>Market Code</th><th>Rate Code</th><th>Agent</th>
+                        <th>Confirm To / Via</th><th>OTA Reference</th><th>Deposit</th><th>Release Cut-off</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model)
+                    {
+                        var agent = r.Agent != null ? r.Agent.DisplayText : r.AgentName;
+                        <tr>
+                            <td>@r.Id</td>
+                            <td>@if (r.ReservationStatus != null) { <span class="status-pill status-info">@r.ReservationStatus.Name</span> }</td>
+                            <td>@(r.BookingCode != null ? r.BookingCode.DisplayText : "")</td>
+                            <td>@(r.MarketCode != null ? r.MarketCode.Code : "")</td>
+                            <td>@(r.Rate != null ? r.Rate.Code : "")</td>
+                            <td>
+                                @agent
+                                @if (r.IsCommission == true) { <div class="text-xs text-muted">Commissionable</div> }
+                            </td>
+                            <td>
+                                @(r.ConfirmTo != null ? r.ConfirmTo.Name : "")
+                                @if (r.ConfirmVia != null) { <div class="text-xs text-muted">via @r.ConfirmVia.Name</div> }
+                            </td>
+                            <td>@r.OTABookingReference</td>
+                            <td data-order="@(r.RequiredDepositAmount ?? 0)">@(r.RequiredDepositAmount.HasValue ? r.RequiredDepositAmount.Value.ToString("N0") : "")</td>
+                            <td data-order="@(r.BookingReleaseCutOffDate.HasValue ? r.BookingReleaseCutOffDate.Value.ToString("o") : "")">@(r.BookingReleaseCutOffDate.HasValue ? r.BookingReleaseCutOffDate.Value.ToString("MMM d, yyyy") : "")</td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="table-action-btn" data-bs-toggle="dropdown"><i class="fa fa-ellipsis-v"></i></button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="@Url.Action("Edit", new { id = r.Id })"><i class="fa fa-pencil me-2"></i>View / Edit</a></li>
+                                        <li><a class="dropdown-item text-danger delete-btn" href="#" data-id="@r.Id"><i class="fa fa-trash me-2"></i>Delete</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            var deleteUrl = '@Url.Action("Delete")';
+            var token = $('input[name="__RequestVerificationToken"]').val();
+
+            $("#reservationRecordsTable").DataTable({ pageLength: 10, lengthChange: false, order: [[0, "desc"]], columnDefs: [{ orderable: false, targets: -1 }] });
+
+            $(document).on("click", ".delete-btn", function (e) {
+                e.preventDefault();
+                var id = $(this).data("id");
+                App.confirmAction({ title: "Delete reservation #" + id + "?", text: "This permanently removes the row from the database.", confirmText: "Delete", danger: true }).then(function (ok) {
+                    if (!ok) { return; }
+                    $.post(deleteUrl, { id: id, __RequestVerificationToken: token }).done(function (r) {
+                        if (!r.success) { App.toast(r.message, "error"); return; }
+                        App.toast("Reservation deleted.");
+                        location.reload();
+                    }).fail(App.ajaxError);
+                });
+            });
+        });
+    </script>
+}

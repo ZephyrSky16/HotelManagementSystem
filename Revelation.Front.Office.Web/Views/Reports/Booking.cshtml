@@ -1,0 +1,67 @@
+@model Revelation.Front.Office.Web.ViewModels.BookingReportViewModel
+@{
+    ViewBag.Title = "Booking Report";
+    var cancelled = Model.Reservations.Count(r => r.BookingStatus.ToString() == "Cancelled");
+    var noShow = Model.Reservations.Count(r => r.BookingStatus.ToString() == "NoShow");
+    var revenue = Model.Reservations.Where(r => r.BookingStatus.ToString() != "Cancelled").Sum(r => r.TotalAmount);
+    var cancelRate = Model.Reservations.Any() ? Math.Round((double)cancelled / Model.Reservations.Count * 100) : 0;
+}
+
+<div class="page-header">
+    <div><h1>Booking Report</h1><div class="text-muted">Reservation activity, cancellations, and arrival/departure volume.</div></div>
+</div>
+
+@using (Html.BeginForm("Booking", "Reports", FormMethod.Get))
+{
+    <div class="hms-card mb-3">
+        <div class="hms-card-body py-2 d-flex gap-2 align-items-center flex-wrap">
+            <label class="small text-muted">Booked From</label>
+            <input type="date" name="start" class="form-control form-control-sm" style="width:160px;" value="@Model.Start.ToString("yyyy-MM-dd")">
+            <label class="small text-muted">To</label>
+            <input type="date" name="end" class="form-control form-control-sm" style="width:160px;" value="@Model.End.ToString("yyyy-MM-dd")">
+            <select name="status" class="form-select form-select-sm" style="width:160px;">
+                <option value="">All Statuses</option>
+                @foreach (var s in new[] { "Tentative", "Confirmed", "CheckedIn", "CheckedOut", "Cancelled", "NoShow" })
+                {
+                    if (s == Model.Status) { <option selected>@s</option> } else { <option>@s</option> }
+                }
+            </select>
+            <button type="submit" class="btn btn-hms-outline btn-sm">Apply</button>
+        </div>
+    </div>
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#e8eef4;color:#1a3a5c;"><i class="fa fa-bookmark"></i></div><div class="kpi-meta"><div class="kpi-value">@Model.Reservations.Count</div><div class="kpi-label">Total Bookings</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#fbe9e7;color:#c0392b;"><i class="fa fa-times-circle"></i></div><div class="kpi-meta"><div class="kpi-value">@cancelRate%</div><div class="kpi-label">Cancellation Rate</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#fdf3e0;color:#b8860b;"><i class="fa fa-user-times"></i></div><div class="kpi-meta"><div class="kpi-value">@noShow</div><div class="kpi-label">No-Shows</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#e5f6ef;color:#1e9e6b;"><i class="fa fa-money"></i></div><div class="kpi-meta"><div class="kpi-value">@revenue.ToString("C")</div><div class="kpi-label">Booked Revenue</div></div></div></div>
+</div>
+
+<div class="hms-card">
+    <div class="hms-card-header"><h2>Reservation Detail</h2></div>
+    <div class="hms-card-body p-2">
+        <div class="table-responsive">
+            <table class="table hms-table w-100" id="brTable">
+                <thead><tr><th>Reservation No.</th><th>Guest</th><th>Booked On</th><th>Check-in</th><th>Check-out</th><th>Room Type</th><th>Source</th><th>Status</th><th>Total</th></tr></thead>
+                <tbody>
+                    @foreach (var r in Model.Reservations.OrderByDescending(x => x.CreatedDate))
+                    {
+                        <tr>
+                            <td>@r.ReservationNo</td><td>@r.Guest.FullName</td><td>@r.CreatedDate.ToString("MMM d, yyyy")</td>
+                            <td>@r.CheckIn.ToString("MMM d, yyyy")</td><td>@r.CheckOut.ToString("MMM d, yyyy")</td>
+                            <td>@r.RoomType.Name</td><td>@r.BookingSource</td>
+                            <td>@Html.Partial("_StatusPill", r.BookingStatus.ToString())</td><td>@r.TotalAmount.ToString("C")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.8/js/dataTables.bootstrap5.min.js"></script>
+    <script>$(function () { $("#brTable").DataTable({ pageLength: 10, lengthChange: false }); });</script>
+}

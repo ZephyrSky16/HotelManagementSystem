@@ -1,0 +1,13 @@
+@{
+    ViewBag.Title = "Error";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /><title>Error</title></head>
+<body style="font-family:Segoe UI, sans-serif; padding:3rem; color:#1f2430;">
+    <h1>Something went wrong.</h1>
+    <p>An unexpected error occurred while processing your request. Please go back and try again.</p>
+    <a href="@Url.Action("Index", "Dashboard")">Return to Dashboard</a>
+</body>
+</html>

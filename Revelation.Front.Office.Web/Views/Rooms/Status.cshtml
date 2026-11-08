@@ -1,0 +1,74 @@
+@model Revelation.Front.Office.Web.ViewModels.RoomListViewModel
+@{
+    ViewBag.Title = "Room Status";
+}
+
+<div class="page-header">
+    <div><h1>Room Status</h1><div class="text-muted">Live snapshot of every room, grouped by floor. Click a room to update its status.</div></div>
+</div>
+
+<div class="d-flex flex-wrap gap-3 mb-3">
+    <span class="legend-item"><span class="rack-room-status-dot available"></span>Available</span>
+    <span class="legend-item"><span class="rack-room-status-dot occupied"></span>Occupied</span>
+    <span class="legend-item"><span class="rack-room-status-dot reserved"></span>Reserved</span>
+    <span class="legend-item"><span class="rack-room-status-dot oor"></span>Out of Order / Maintenance</span>
+</div>
+
+@foreach (var floorGroup in Model.Rooms.GroupBy(r => r.Floor).OrderBy(g => g.Key))
+{
+    <div class="hms-card mb-3">
+        <div class="hms-card-header"><h2>Floor @floorGroup.Key</h2><span class="text-muted text-xs">@floorGroup.Count() room(s)</span></div>
+        <div class="hms-card-body">
+            <div class="row g-2">
+                @foreach (var room in floorGroup.OrderBy(r => r.Number))
+                {
+                    var dotClass = room.Status.ToString() == "Available" ? "available" : room.Status.ToString() == "Occupied" ? "occupied" : room.Status.ToString() == "Reserved" ? "reserved" : "oor";
+                    <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+                        <div class="hk-room-tile room-status-tile" data-id="@room.Id" data-status="@room.Status" data-hk="@room.HousekeepingStatus">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <span class="room-no">@room.Number</span>
+                                <span class="rack-room-status-dot @dotClass"></span>
+                            </div>
+                            <div class="text-xs text-muted">@room.RoomType.Name</div>
+                            <div class="mt-1">@Html.Partial("_StatusPill", room.Status.ToString())</div>
+                            <div class="text-xs text-muted mt-1">HK: @room.HousekeepingStatus</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="rsUpdateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Update Room <span id="rsModalRoomNo"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="rsModalRoomId">
+                <div class="mb-3"><label class="form-label">Room Status</label><select class="form-select" id="rsModalStatus"><option>Available</option><option>Occupied</option><option>Reserved</option><option>OutOfOrder</option><option>UnderMaintenance</option></select></div>
+                <div class="mb-1"><label class="form-label">Housekeeping Status</label><select class="form-select" id="rsModalHk"><option>Dirty</option><option>Clean</option><option>Inspected</option><option>Occupied</option></select></div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-hms-outline" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-hms-primary" id="rsSaveBtn">Save Status</button></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.RoomsUrls = { updateStatus: '@Url.Action("UpdateStatus")' };
+        $(function () {
+            $(document).on("click", ".room-status-tile", function () {
+                $("#rsModalRoomNo").text($(this).find(".room-no").text());
+                $("#rsModalRoomId").val($(this).data("id"));
+                $("#rsModalStatus").val($(this).data("status"));
+                $("#rsModalHk").val($(this).data("hk"));
+                new bootstrap.Modal(document.getElementById("rsUpdateModal")).show();
+            });
+            $("#rsSaveBtn").on("click", function () {
+                $.post(window.RoomsUrls.updateStatus, { id: $("#rsModalRoomId").val(), status: $("#rsModalStatus").val(), housekeepingStatus: $("#rsModalHk").val() })
+                    .done(function () { App.toast("Room status updated."); location.reload(); }).fail(App.ajaxError);
+            });
+        });
+    </script>
+}

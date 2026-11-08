@@ -1,0 +1,192 @@
+@model Revelation.Front.Office.Web.ViewModels.ReservationFormViewModel
+@{
+    ViewBag.Title = Model.Id.HasValue ? "Edit Reservation" : "New Booking";
+    var isEdit = Model.Id.HasValue;
+}
+
+<div class="page-header">
+    <div>
+        <h1>@(isEdit ? "Edit Reservation -- " + Model.ReservationNo : "New Booking")</h1>
+        <div class="text-muted">Complete all sections, then review the summary before confirming.</div>
+    </div>
+    <a href="@Url.Action("Index")" class="btn btn-hms-outline btn-sm"><i class="fa fa-arrow-left me-1"></i>Back to List</a>
+</div>
+
+<div class="hms-card">
+    <div class="hms-card-body">
+        @using (Html.BeginForm(isEdit ? "Edit" : "Create", "Reservations", isEdit ? new { id = Model.Id } : null, FormMethod.Post, new { id = "reservationForm" }))
+        {
+            @Html.AntiForgeryToken()
+            @Html.ValidationSummary(false, "Please correct the errors below.", new { @class = "alert alert-danger" })
+
+            <div class="form-section-title"><span class="step-badge">1</span>Guest Information</div>
+            <div class="row g-3 mb-2">
+                <div class="col-md-6">
+                    <label class="form-label">Search Existing Guest</label>
+                    <select class="form-select" id="existingGuestSelect">
+                        <option value="">-- New guest --</option>
+                        @foreach (var g in Model.Guests)
+                        {
+                            <option value="@g.Id" data-first="@g.FirstName" data-last="@g.LastName" data-email="@g.Email" data-phone="@g.Phone" data-address="@g.Address" data-nationality="@g.Nationality" data-idtype="@g.IdType" data-idnumber="@g.IdNumber">@g.FullName -- @g.Phone</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-3">@Html.LabelFor(m => m.FirstName, new { @class = "form-label" }) @Html.TextBoxFor(m => m.FirstName, new { @class = "form-control" }) @Html.ValidationMessageFor(m => m.FirstName, "", new { @class = "text-danger text-xs" })</div>
+                <div class="col-md-3">@Html.LabelFor(m => m.LastName, new { @class = "form-label" }) @Html.TextBoxFor(m => m.LastName, new { @class = "form-control" }) @Html.ValidationMessageFor(m => m.LastName, "", new { @class = "text-danger text-xs" })</div>
+                <div class="col-md-3">@Html.LabelFor(m => m.Email, new { @class = "form-label" }) @Html.TextBoxFor(m => m.Email, new { @class = "form-control" }) @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-danger text-xs" })</div>
+                <div class="col-md-3">@Html.LabelFor(m => m.Phone, new { @class = "form-label" }) @Html.TextBoxFor(m => m.Phone, new { @class = "form-control" }) @Html.ValidationMessageFor(m => m.Phone, "", new { @class = "text-danger text-xs" })</div>
+                <div class="col-md-6">@Html.LabelFor(m => m.Address, new { @class = "form-label" }) @Html.TextBoxFor(m => m.Address, new { @class = "form-control" })</div>
+                <div class="col-md-2">@Html.LabelFor(m => m.Nationality, new { @class = "form-label" }) @Html.TextBoxFor(m => m.Nationality, new { @class = "form-control" })</div>
+                <div class="col-md-2">@Html.LabelFor(m => m.IdType, new { @class = "form-label" }) @Html.EnumDropDownListFor(m => m.IdType, "Select...", new { @class = "form-select" })</div>
+                <div class="col-md-2">@Html.LabelFor(m => m.IdNumber, new { @class = "form-label" }) @Html.TextBoxFor(m => m.IdNumber, new { @class = "form-control" })</div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title"><span class="step-badge">2</span>Reservation Details</div>
+            <div class="row g-3">
+                <div class="col-md-3">@Html.LabelFor(m => m.CheckIn, new { @class = "form-label" }) @Html.TextBoxFor(m => m.CheckIn, "{0:yyyy-MM-dd}", new { @class = "form-control", id = "checkInInput" }) @Html.ValidationMessageFor(m => m.CheckIn, "", new { @class = "text-danger text-xs" })</div>
+                <div class="col-md-3">@Html.LabelFor(m => m.CheckOut, new { @class = "form-label" }) @Html.TextBoxFor(m => m.CheckOut, "{0:yyyy-MM-dd}", new { @class = "form-control", id = "checkOutInput" }) @Html.ValidationMessageFor(m => m.CheckOut, "", new { @class = "text-danger text-xs" })</div>
+                <div class="col-md-2">@Html.LabelFor(m => m.Adults, new { @class = "form-label" }) @Html.TextBoxFor(m => m.Adults, new { @class = "form-control", type = "number", min = 1 })</div>
+                <div class="col-md-2">@Html.LabelFor(m => m.Children, new { @class = "form-label" }) @Html.TextBoxFor(m => m.Children, new { @class = "form-control", type = "number", min = 0 })</div>
+                <div class="col-md-4">
+                    @Html.LabelFor(m => m.RoomTypeId, new { @class = "form-label" })
+                    @Html.DropDownListFor(m => m.RoomTypeId, Model.RoomTypes.Select(t => new SelectListItem { Value = t.Id.ToString(), Text = t.Name + " (from " + t.BaseRate.ToString("C") + ")" }), "Select room type...", new { @class = "form-select", id = "roomTypeSelect" })
+                    @Html.ValidationMessageFor(m => m.RoomTypeId, "", new { @class = "text-danger text-xs" })
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="button" class="btn btn-hms-outline w-100" id="searchRoomsBtn"><i class="fa fa-search me-1"></i>Search Available Rooms</button>
+                </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title"><span class="step-badge">3</span>Room and Rate Selection</div>
+            <div id="availableRoomsWrap">
+                <div class="text-muted text-xs mb-2">Choose dates and a room type, then search to see available rooms.</div>
+                <div class="row g-2" id="availableRoomsList"></div>
+            </div>
+            @Html.HiddenFor(m => m.SelectedRoomId, new { id = "selectedRoomIdInput" })
+            @Html.ValidationMessageFor(m => m.SelectedRoomId, "", new { @class = "text-danger text-xs" })
+            <div class="row g-3 mt-2">
+                <div class="col-md-3"><label class="form-label">Rate / Night</label><input type="text" class="form-control" id="rateDisplay" readonly></div>
+                <div class="col-md-3"><label class="form-label">Nights</label><input type="text" class="form-control" id="nightsDisplay" readonly></div>
+                <div class="col-md-3">@Html.LabelFor(m => m.Discount, new { @class = "form-label" }) @Html.TextBoxFor(m => m.Discount, new { @class = "form-control", type = "number", step = "0.01", id = "discountInput" })</div>
+                <div class="col-md-3"><label class="form-label">Total Amount</label><input type="text" class="form-control fw-600" id="totalDisplay" readonly></div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title"><span class="step-badge">4</span>Payment Information</div>
+            <div class="row g-3">
+                <div class="col-md-3">@Html.LabelFor(m => m.AmountPaid, new { @class = "form-label" }) @Html.TextBoxFor(m => m.AmountPaid, new { @class = "form-control", type = "number", step = "0.01", id = "amountPaidInput" })</div>
+                <div class="col-md-3">@Html.LabelFor(m => m.PaymentMethod, new { @class = "form-label" }) @Html.EnumDropDownListFor(m => m.PaymentMethod, new { @class = "form-select" })</div>
+                <div class="col-md-3">@Html.LabelFor(m => m.PaymentStatus, new { @class = "form-label" }) @Html.EnumDropDownListFor(m => m.PaymentStatus, new { @class = "form-select", id = "paymentStatusSelect" })</div>
+                <div class="col-md-3">@Html.LabelFor(m => m.PaymentReference, new { @class = "form-label" }) @Html.TextBoxFor(m => m.PaymentReference, new { @class = "form-control" })</div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="form-section-title"><span class="step-badge">5</span>Additional Information</div>
+            <div class="row g-3">
+                <div class="col-md-6">@Html.LabelFor(m => m.SpecialRequests, new { @class = "form-label" }) @Html.TextAreaFor(m => m.SpecialRequests, new { @class = "form-control", rows = 2 })</div>
+                <div class="col-md-6">@Html.LabelFor(m => m.StaffNotes, new { @class = "form-label" }) @Html.TextAreaFor(m => m.StaffNotes, new { @class = "form-control", rows = 2 })</div>
+                <div class="col-md-4">@Html.LabelFor(m => m.BookingSource, new { @class = "form-label" }) @Html.EnumDropDownListFor(m => m.BookingSource, new { @class = "form-select" })</div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <a href="@Url.Action("Index")" class="btn btn-hms-outline">Cancel</a>
+                <button type="submit" class="btn btn-hms-primary"><i class="fa fa-check me-1"></i>@(isEdit ? "Save Changes" : "Confirm Booking")</button>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var preselectRoomId = @(Model.SelectedRoomId ?? 0);
+        var excludeReservationId = @(Model.Id ?? 0);
+
+        $(function () {
+            if (window.flatpickr) {
+                window._ciFp = flatpickr("#checkInInput", { dateFormat: "Y-m-d", onChange: function (sel) {
+                    if (sel[0] && window._coFp) { window._coFp.set("minDate", new Date(sel[0]).fp_incr(1)); }
+                } });
+                window._coFp = flatpickr("#checkOutInput", { dateFormat: "Y-m-d" });
+            }
+
+            $("#existingGuestSelect").on("change", function () {
+                var o = $(this).find(":selected");
+                if (!o.val()) { return; }
+                $("#FirstName").val(o.data("first"));
+                $("#LastName").val(o.data("last"));
+                $("#Email").val(o.data("email"));
+                $("#Phone").val(o.data("phone"));
+                $("#Address").val(o.data("address"));
+                $("#Nationality").val(o.data("nationality"));
+                $("#IdNumber").val(o.data("idnumber"));
+            });
+
+            function recalcTotals() {
+                var rate = Number($("#rateDisplay").data("rate")) || 0;
+                var ci = $("#checkInInput").val(), co = $("#checkOutInput").val();
+                var nights = 0;
+                if (ci && co) {
+                    nights = Math.max(1, Math.round((new Date(co) - new Date(ci)) / 86400000));
+                }
+                var discount = Number($("#discountInput").val()) || 0;
+                var subtotal = rate * nights;
+                var tax = subtotal * 0.12;
+                var total = Math.max(0, subtotal + tax - discount);
+                var paid = Number($("#amountPaidInput").val()) || 0;
+
+                $("#nightsDisplay").val(nights);
+                $("#totalDisplay").val(App.formatCurrency(total));
+                if (paid <= 0) { $("#paymentStatusSelect").val("Unpaid"); }
+                else if (paid < total) { $("#paymentStatusSelect").val("PartiallyPaid"); }
+                else { $("#paymentStatusSelect").val("Paid"); }
+            }
+
+            $(document).on("change input", "#checkInInput, #checkOutInput, #discountInput, #amountPaidInput", recalcTotals);
+
+            $("#searchRoomsBtn").on("click", function () {
+                var roomTypeId = $("#roomTypeSelect").val();
+                var ci = $("#checkInInput").val(), co = $("#checkOutInput").val();
+                if (!roomTypeId || !ci || !co) { App.toast("Select check-in, check-out, and room type first.", "error"); return; }
+
+                $.get('@Url.Action("GetAvailableRooms")', { roomTypeId: roomTypeId, checkIn: ci, checkOut: co, excludeReservationId: excludeReservationId })
+                    .done(function (rooms) {
+                        $("#availableRoomsWrap .text-muted").hide();
+                        if (!rooms.length) {
+                            $("#availableRoomsList").html('<div class="col-12 text-muted text-center py-3">No rooms available for the selected dates and type.</div>');
+                            return;
+                        }
+                        var html = rooms.map(function (r) {
+                            var selected = r.id === preselectRoomId;
+                            return '<div class="col-md-4"><div class="border rounded p-2 cursor-pointer room-pick-card ' + (selected ? "border-primary bg-light" : "") + '" data-id="' + r.id + '" data-rate="' + r.rate + '">' +
+                                '<div class="fw-600">Room ' + r.number + '</div><div class="text-xs text-muted">Floor ' + r.floor + ' &middot; ' + r.bed + '</div>' +
+                                '<div class="text-xs mt-1">' + App.formatCurrency(r.rate) + ' / night</div></div></div>';
+                        }).join("");
+                        $("#availableRoomsList").html(html);
+                        var $pre = $('.room-pick-card[data-id="' + preselectRoomId + '"]');
+                        if ($pre.length) { $pre.trigger("click"); }
+                    }).fail(App.ajaxError);
+            });
+
+            $(document).on("click", ".room-pick-card", function () {
+                $(".room-pick-card").removeClass("border-primary bg-light");
+                $(this).addClass("border-primary bg-light");
+                $("#selectedRoomIdInput").val($(this).data("id"));
+                $("#rateDisplay").data("rate", $(this).data("rate")).val(App.formatCurrency($(this).data("rate")));
+                recalcTotals();
+            });
+
+            // Preload rooms if editing an existing reservation
+            if (excludeReservationId > 0 && $("#roomTypeSelect").val()) {
+                $("#searchRoomsBtn").trigger("click");
+            }
+        });
+    </script>
+}

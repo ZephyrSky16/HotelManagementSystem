@@ -1,0 +1,36 @@
+@model Revelation.Front.Office.Models.Entities.Room
+@{
+    var current = ViewBag.Current as Revelation.Front.Office.Models.Entities.Reservation;
+    var history = ViewBag.History as List<Revelation.Front.Office.Models.Entities.Reservation> ?? new List<Revelation.Front.Office.Models.Entities.Reservation>();
+
+    Func<string, string, string> row = (label, value) =>
+        "<div class='d-flex justify-content-between py-1 border-bottom'><span class='text-muted text-xs'>" + label + "</span><span class='text-end'>" + value + "</span></div>";
+}
+<h5>Room @Model.Number</h5>
+@Html.Raw(row("Room Type", Model.RoomType.Name))
+@Html.Raw(row("Floor", Model.Floor.ToString()))
+@Html.Raw(row("Capacity / Bed", Model.Capacity + " guests &middot; " + Model.BedConfiguration))
+@Html.Raw(row("Base Rate", Model.BaseRate.ToString("C")))
+
+<h6 class="mt-4">Current Reservation</h6>
+@if (current != null)
+{
+    @Html.Raw(row(current.Guest.FullName, current.ReservationNo + " &middot; " + current.CheckIn.ToString("MMM d") + " &rarr; " + current.CheckOut.ToString("MMM d, yyyy")))
+}
+else
+{
+    <div class="text-muted text-xs">No guest currently in-house.</div>
+}
+
+<h6 class="mt-4">Previous Reservations</h6>
+@if (history.Any())
+{
+    foreach (var h in history)
+    {
+        @Html.Raw(row(h.Guest.FullName, h.CheckIn.ToString("MMM d") + " &rarr; " + h.CheckOut.ToString("MMM d, yyyy") + " &middot; " + h.BookingStatus))
+    }
+}
+else
+{
+    <div class="text-muted text-xs">No reservation history.</div>
+}

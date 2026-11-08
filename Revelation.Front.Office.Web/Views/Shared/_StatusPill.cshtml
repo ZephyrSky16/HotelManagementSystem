@@ -1,0 +1,23 @@
+@model string
+@{
+    var map = new System.Collections.Generic.Dictionary<string, string>
+    {
+        { "Tentative", "status-slate" }, { "Confirmed", "status-info" }, { "CheckedIn", "status-success" },
+        { "CheckedOut", "status-slate" }, { "Cancelled", "status-danger" }, { "NoShow", "status-danger" },
+        { "Available", "status-success" }, { "Occupied", "status-danger" }, { "Reserved", "status-info" },
+        { "Dirty", "status-warning" }, { "Clean", "status-success" }, { "Inspected", "status-primary" },
+        { "OutOfOrder", "status-slate" }, { "UnderMaintenance", "status-warning" },
+        { "Paid", "status-success" }, { "PartiallyPaid", "status-warning" }, { "Unpaid", "status-danger" }, { "Refunded", "status-slate" },
+        { "Reported", "status-danger" }, { "Assigned", "status-info" }, { "InProgress", "status-warning" }, { "OnHold", "status-slate" }, { "Completed", "status-success" },
+        { "Low", "status-slate" }, { "Medium", "status-info" }, { "High", "status-warning" }, { "Critical", "status-danger" }
+    };
+    var labelMap = new System.Collections.Generic.Dictionary<string, string>
+    {
+        { "CheckedIn", "Checked In" }, { "CheckedOut", "Checked Out" }, { "NoShow", "No Show" },
+        { "OutOfOrder", "Out of Order" }, { "UnderMaintenance", "Under Maintenance" }, { "PartiallyPaid", "Partially Paid" },
+        { "InProgress", "In Progress" }, { "OnHold", "On Hold" }
+    };
+    string cls = (Model != null && map.ContainsKey(Model)) ? map[Model] : "status-slate";
+    string label = (Model != null && labelMap.ContainsKey(Model)) ? labelMap[Model] : Model;
+}
+<span class="status-pill @cls">@label</span>

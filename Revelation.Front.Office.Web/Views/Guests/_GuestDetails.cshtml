@@ -1,0 +1,44 @@
+@model Revelation.Front.Office.Models.Entities.Guest
+@{
+    var history = ViewBag.History as List<Revelation.Front.Office.Models.Entities.Reservation> ?? new List<Revelation.Front.Office.Models.Entities.Reservation>();
+    Func<string, string, string> row = (label, value) =>
+        "<div class='d-flex justify-content-between py-1 border-bottom'><span class='text-muted text-xs'>" + label + "</span><span class='text-end'>" + value + "</span></div>";
+}
+<h5>@Model.FullName -- G-@Model.Id</h5>
+@Html.Raw(row("Contact", Model.Phone + " &middot; " + Model.Email))
+@Html.Raw(row("Nationality", Model.Nationality))
+@Html.Raw(row("Address", Model.Address ?? "--"))
+@Html.Raw(row("Identification", (Model.IdType.HasValue ? Model.IdType.ToString() : "--") + " " + Model.IdNumber))
+@Html.Raw(row("Total Reservations", ViewBag.TotalReservations.ToString()))
+@if (!string.IsNullOrEmpty(Model.SpecialRequests))
+{
+    @Html.Raw(row("Special Requests", Model.SpecialRequests))
+}
+@if (!string.IsNullOrEmpty(Model.InternalNotes))
+{
+    @Html.Raw(row("Internal Notes", Model.InternalNotes))
+}
+
+<h6 class="mt-4">Reservation &amp; Payment History</h6>
+@if (history.Any())
+{
+    <table class="table hms-table table-sm">
+        <thead><tr><th>Reservation</th><th>Dates</th><th>Status</th><th>Total</th><th>Payment</th></tr></thead>
+        <tbody>
+            @foreach (var r in history)
+            {
+                <tr>
+                    <td>@r.ReservationNo</td>
+                    <td>@r.CheckIn.ToString("MMM d") &rarr; @r.CheckOut.ToString("MMM d, yyyy")</td>
+                    <td>@Html.Partial("_StatusPill", r.BookingStatus.ToString())</td>
+                    <td>@r.TotalAmount.ToString("C")</td>
+                    <td>@Html.Partial("_StatusPill", r.PaymentStatus.ToString())</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="text-muted text-xs">No reservation history linked to this profile yet.</div>
+}

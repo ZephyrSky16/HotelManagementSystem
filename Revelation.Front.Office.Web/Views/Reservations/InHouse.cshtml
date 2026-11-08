@@ -1,0 +1,58 @@
+@model Revelation.Front.Office.Web.ViewModels.ReservationListViewModel
+@{
+    ViewBag.Title = "In-House Guests";
+}
+
+<div class="page-header">
+    <div><h1>In-House Guests</h1><div class="text-muted">Guests currently checked in across the hotel.</div></div>
+</div>
+
+@{
+    var totalGuests = Model.Reservations.Sum(r => r.Adults + r.Children);
+    var withBalance = Model.Reservations.Count(r => r.Balance > 0);
+    var leavingToday = Model.Reservations.Count(r => r.CheckOut.Date == DateTime.Today);
+}
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#e8eef4;color:#1a3a5c;"><i class="fa fa-bed"></i></div><div class="kpi-meta"><div class="kpi-value">@Model.Reservations.Count</div><div class="kpi-label">In-House Reservations</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#e5f6ef;color:#1e9e6b;"><i class="fa fa-users"></i></div><div class="kpi-meta"><div class="kpi-value">@totalGuests</div><div class="kpi-label">Total Guests On-Site</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#fdf3e0;color:#b8860b;"><i class="fa fa-sign-out"></i></div><div class="kpi-meta"><div class="kpi-value">@leavingToday</div><div class="kpi-label">Departing Today</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi-card"><div class="kpi-icon" style="background:#fbe9e7;color:#c0392b;"><i class="fa fa-exclamation-circle"></i></div><div class="kpi-meta"><div class="kpi-value">@withBalance</div><div class="kpi-label">With Outstanding Balance</div></div></div></div>
+</div>
+
+<div class="hms-card">
+    <div class="hms-card-header"><h2>Currently In-House</h2><input type="search" class="form-control form-control-sm" style="width:260px;" id="ihgSearch" placeholder="Search guest, room, or reservation..."></div>
+    <div class="hms-card-body p-2">
+        <div class="table-responsive">
+            <table class="table hms-table table-hover w-100" id="ihgTable">
+                <thead><tr><th>Guest</th><th>Room</th><th>Room Type</th><th>Check-in</th><th>Check-out</th><th>Nights</th><th>Balance</th><th>Payment</th><th>Actions</th></tr></thead>
+                <tbody>
+                    @foreach (var r in Model.Reservations)
+                    {
+                        <tr>
+                            <td><div class="fw-600">@r.Guest.FullName</div><div class="text-xs text-muted">@r.ReservationNo</div></td>
+                            <td>@r.Room.Number</td>
+                            <td>@r.RoomType.Name</td>
+                            <td>@r.CheckIn.ToString("MMM d, yyyy")</td>
+                            <td>@r.CheckOut.ToString("MMM d, yyyy")</td>
+                            <td>@r.Nights</td>
+                            <td><span class="@(r.Balance > 0 ? "text-danger fw-600" : "text-success")">@r.Balance.ToString("C")</span></td>
+                            <td>@Html.Partial("_StatusPill", r.PaymentStatus.ToString())</td>
+                            <td><a href="@Url.Action("Index", "CheckOut", new { res = r.ReservationNo })" class="btn btn-sm btn-hms-primary"><i class="fa fa-sign-out me-1"></i>Check-out</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.8/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(function () {
+            var table = $("#ihgTable").DataTable({ pageLength: 10, lengthChange: false });
+            $("#ihgSearch").on("input", function () { table.search($(this).val()).draw(); });
+        });
+    </script>
+}
